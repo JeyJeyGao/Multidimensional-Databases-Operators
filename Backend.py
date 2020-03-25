@@ -80,6 +80,6 @@ class Backend:
     def __init__(self):
         pass
         
-connect = Backend()
-connect.start_connection()
-connect.get_table("Product")
+backend = Backend()
+backend.start_connection()
+backend.get_table("Product")
