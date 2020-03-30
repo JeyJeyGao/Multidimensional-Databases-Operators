@@ -19,7 +19,7 @@ create_table = """CREATE TABLE {} (
  date DATE NOT NULL,
  confirmed INT NOT NULL,
  death INT NOT NULL,
- PRIMARY KEY (province_state, country_state, date)
+ KEY (province_state, country_state, date)
 );
 """.format(table_name)
 out_file.write(create_table + "\n")
