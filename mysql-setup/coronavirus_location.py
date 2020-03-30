@@ -49,7 +49,9 @@ for ind in confirmed_data.index:
         state = "NULL"
     else:
         state = "'{}'".format(state)
-    out_file.write("INSERT INTO {0} VALUES ({1}, '{2}', {3}, {4});\n".format(table_name, state,
-                                                                                    country.replace("'", "\\'"),
-                                                                                    latitude, longitude))
+    if not (latitude == 0 and longitude == 0):
+        out_file.write("INSERT INTO {0} VALUES ({1}, '{2}', {3}, {4});\n".format(table_name, state,
+                                                                                        country.replace("'", "\\'"),
+                                                                                        latitude, longitude))
+print("Done.")
 out_file.close()
