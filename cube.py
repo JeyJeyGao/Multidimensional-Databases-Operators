@@ -1,24 +1,18 @@
-class Cube:
-    def __init__(self):
-        self.original_data = None
-        self.dimentions_name = None
-        self.dimention_value = None
-        self.elements = None
-    
-    def load_table(self, dimentions_name, rows):
-        if len(dimentions_name) < 1:
-            print("Error: the number of dimention is 0.")
-            return
-        self.original_data = rows
-        self.dimentions_name = dimentions_name
-        self.dimention_value = rows[:-1]
-        self.elements = rows[-1]
+import pandas as pd 
 
+class Cube:
+    def __init__(self, table_df):
+        self.original_data = table_df
+        self.cube = table_df.copy()
+        self.element = pd.DataFrame()
+    
     def export_table(self, ):
         rows = self.dimention_value + self.elements
         return (dimentions_name, rows)
-        
 
+    def print():
+        pass
+        
     def pull():
         pass
 

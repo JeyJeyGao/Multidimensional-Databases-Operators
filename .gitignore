@@ -2,3 +2,6 @@
 *.swo
 *.pyc
 .vscode/
+./COVID-19
+corona_location.sql
+corona.sql

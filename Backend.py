@@ -1,6 +1,8 @@
 import mysql.connector
 from mysql.connector import errorcode
 import json
+import pandas as pd
+import numpy as np 
 
 class Backend:
     is_config = False
@@ -51,6 +53,8 @@ class Backend:
             self.is_connected = True
             print("Start connection succeed.")
     
+    # input: table name in the database
+    # return: pandas dataFrame
     def get_table(self, table_name):
         if self.is_connected == False:
             print("Backend is not connected.")
@@ -61,19 +65,19 @@ class Backend:
         query_rows = ("SELECT * FROM {}".format(table_name))
         cursor.execute(query_rows)
         for row in cursor:
-            rows.append(row)
+            rows.append(list(row))
         # get dimentions name
-        dimentions_info = [] # full dimention info from database
-        dimentions_name = [] # only dimention name
-        query_dimention_name = ("SELECT * FROM INFORMATION_SCHEMA.COLUMNS where TABLE_NAME='{}'".format(table_name))
-        cursor.execute(query_dimention_name)
-        for dimention in cursor:
-            dimentions_info.append(dimention)
-            dimentions_name.append(dimention[3])
-        return (dimentions_name, rows)
+        col_info = [] # full collumn info from database
+        col_name = [] # only collumn name
+        query_col_name = ("SELECT * FROM INFORMATION_SCHEMA.COLUMNS where TABLE_NAME='{}'".format(table_name))
+        cursor.execute(query_col_name)
+        for c in cursor:
+            col_info.append(c)
+            col_name.append(c[3])
+        table_np = np.array([col_name] + rows)
+        table_df = pd.DataFrame(data=table_np[1:,0:], columns=table_np[0,0:])
+        return table_df
 
-        
-        
     def get_cube():
         pass
 
@@ -82,4 +86,5 @@ class Backend:
         
 backend = Backend()
 backend.start_connection()
-backend.get_table("Product")
+table = backend.get_table("cases")
+print(table)
