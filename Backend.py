@@ -19,6 +19,10 @@ class Backend:
             self.password = config_data["password"]
             self.host = config_data["host"]
             self.database = config_data["database"]
+            try:
+                self.port = config_data["port"]
+            except:
+                self.port = 3306
         except:
             print("Error: missing key/value in config.json file.")
             return False
@@ -40,7 +44,8 @@ class Backend:
         if self.load_config() == False:
             return
         try:
-            self.cnx = mysql.connector.connect(user=self.user, password=self.password, host=self.host, database=self.database)
+            self.cnx = mysql.connector.connect(user=self.user, password=self.password, host=self.host,
+                                               port=self.port, database=self.database)
         except mysql.connector.Error as err:
             if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
                 print("Something is wrong with your user name or password")
@@ -78,12 +83,12 @@ class Backend:
         table_df = pd.DataFrame(data=table_np[1:,0:], columns=table_np[0,0:])
         return table_df
 
-    def get_cube():
+    def get_cube(self):
         pass
 
     def __init__(self):
         pass
-        
+
 backend = Backend()
 backend.start_connection()
 table = backend.get_table("cases")
