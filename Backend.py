@@ -1,8 +1,12 @@
 import mysql.connector
 from mysql.connector import errorcode
+from mysql.connector.errors import ProgrammingError
 import json
 import pandas as pd
-import numpy as np 
+import numpy as np
+import os
+import mysql_setup.coronavirus as coronavirus
+import mysql_setup.coronavirus_location as coronavirus_location
 
 class Backend:
     is_config = False
@@ -89,7 +93,31 @@ class Backend:
     def __init__(self):
         pass
 
-backend = Backend()
-backend.start_connection()
-table = backend.get_table("cases")
-print(table)
+    def update_coronavirus_data(self):
+        def update_table(table_name, output_name, module):
+            cursor = self.cnx.cursor()
+            print("Updating database table: {}".format(table_name))
+            try:
+                self.get_table(table_name)
+                cursor.execute("DROP TABLE {};".format(table_name))
+            except ProgrammingError:
+                pass
+            module.main()
+            with open(os.path.join("mysql_setup", output_name)) as f:
+                for q in f:
+                    cursor.execute(q)
+
+        update_table(coronavirus.table_name, coronavirus.output_name, coronavirus)
+        update_table(coronavirus_location.table_name, coronavirus_location.output_name, coronavirus_location)
+        self.cnx.commit()
+        print("CoronaVirus data updated.")
+
+
+if __name__ == "__main__":
+    backend = Backend()
+    backend.start_connection()
+    backend.update_coronavirus_data()
+    cases_table = backend.get_table(coronavirus.table_name)
+    print(cases_table)
+    location_table = backend.get_table(coronavirus_location.table_name)
+    print(location_table)

@@ -1,8 +1,9 @@
 # install package by running 'pip install gitpython'
 import git
+import os
 
 GIT_URL = "https://github.com/CSSEGISandData/COVID-19.git"
-DIR_NAME = "COVID-19"
+DIR_NAME = os.path.join("mysql_setup", "COVID-19")
 
 
 def fetch_data():
@@ -11,4 +12,4 @@ def fetch_data():
         git.Repo.clone_from(GIT_URL, DIR_NAME)
     except git.GitError:
         print("Repository already exists. Pulling remote data...")
-        git.Repo("COVID-19").remotes.origin.pull()
+        git.Repo(DIR_NAME).remotes.origin.pull()
