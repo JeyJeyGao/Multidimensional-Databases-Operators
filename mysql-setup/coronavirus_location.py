@@ -1,6 +1,10 @@
 # Write location to SQL
 import os
 import pandas
+import jhu_data
+
+
+jhu_data.fetch_data()
 
 dir_prefix = os.path.join("COVID-19", "csse_covid_19_data")
 daily_reports_dir = os.path.join(dir_prefix, "csse_covid_19_daily_reports")

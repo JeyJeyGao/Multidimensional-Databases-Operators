@@ -6,6 +6,10 @@ import os
 from datetime import date, timedelta
 from states import states_dict
 import pandas
+import jhu_data
+
+
+jhu_data.fetch_data()
 
 table_name = "cases"
 output_name = "corona.sql"
