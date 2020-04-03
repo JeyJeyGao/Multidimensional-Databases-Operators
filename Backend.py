@@ -7,6 +7,7 @@ import numpy as np
 import os
 import mysql_setup.coronavirus as coronavirus
 import mysql_setup.coronavirus_location as coronavirus_location
+from Cube import Cube
 
 class Backend:
     is_config = False
@@ -87,8 +88,9 @@ class Backend:
         table_df = pd.DataFrame(data=table_np[1:,0:], columns=table_np[0,0:])
         return table_df
 
-    def get_cube(self):
-        pass
+    def get_cube(self, table_name):
+        table_df = self.get_table(table_name)
+        return Cube(table_df)
 
     def __init__(self):
         pass
