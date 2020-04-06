@@ -1,6 +1,7 @@
 import pandas as pd 
 import numpy as np
 import copy
+import visualization
 
 class Cube:
     def __init__(self, table_df):
@@ -21,6 +22,23 @@ class Cube:
                     element_tuple[i] = 1
             temp_cube["element"] = element_tuple
         print(temp_cube)
+
+    def get_dimension_names(self):
+        return list(self.cube.columns)
+
+    def get_num_dimensions(self):
+        return len(self.cube.columns)
+
+    def visualize(self, type=None):
+        if not type:
+            if self.get_num_dimensions() <= 3:
+                visualization.show_cube(self.cube, self.element)
+            else:
+                visualization.show_table(self.cube, self.element)
+        elif type == "table":
+            visualization.show_table(self.cube, self.element)
+        elif type == "map":
+            visualization.show_map(self.cube, self.element)
         
     def pull(self, dimentions_name):
         if dimentions_name not in self.element.columns:
@@ -45,7 +63,7 @@ class Cube:
             return self
         dimentions_values = self.cube[dimentions_name]
         if len(dimentions_values) > 0:
-            only_value = dimentions_values[0]
+            only_value = dimentions_values[dimentions_values.index[0]]
             for v in dimentions_values:
                 if not v == only_value:
                     print("Error: Cannot destroy dimention, because more than one value in this dimention")

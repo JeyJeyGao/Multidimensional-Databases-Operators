@@ -7,7 +7,7 @@ import numpy as np
 import os
 import mysql_setup.coronavirus as coronavirus
 import mysql_setup.coronavirus_location as coronavirus_location
-from Cube import Cube
+from cube import Cube
 
 class Backend:
     is_config = False

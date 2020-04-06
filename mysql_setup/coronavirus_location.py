@@ -18,10 +18,10 @@ def main():
     print("Writing location data to SQL...")
     create_table = """CREATE TABLE {} (
      province_state VARCHAR (50),
-     country_state VARCHAR (50) NOT NULL,
-     latitue FLOAT NOT NULL,
+     country_region VARCHAR (50) NOT NULL,
+     latitude FLOAT NOT NULL,
      longitude FLOAT NOT NULL,
-     KEY (province_state, country_state)
+     KEY (province_state, country_region)
     );
     """.format(table_name).replace("\n", "")
     out_file.write(create_table + "\n")
