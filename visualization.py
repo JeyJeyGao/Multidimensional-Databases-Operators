@@ -1,7 +1,7 @@
 from pandas import DataFrame
 from bokeh.io import show
 from bokeh.models import ColumnDataSource, HoverTool, PanTool, WheelZoomTool, SaveTool, ResetTool, Select, \
-    Slider, FuncTickFormatter, DataTable, TableColumn, DateFormatter
+    Slider, FuncTickFormatter, DataTable, TableColumn, DateFormatter, Button
 from bokeh.plotting import figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 from bokeh.server.server import Server
@@ -27,6 +27,7 @@ class Visualization:
         self.cube_copy = deepcopy(self.cube)
         self.date = "date" in self.cube.columns and min(self.cube["date"]) != max(self.cube["date"])
         self.server = Server({'/' + self.random_str(): self.bkapp}, port=self.port[0])
+        self.tile_provider = get_provider(CARTODBPOSITRON)
         self.port[0] += 1
 
     def show_map(self):
@@ -66,7 +67,25 @@ class Visualization:
                 }
                 return to_date(tick);
             """)
-            controls = column(select, date_slider, width=200)
+            button = Button(label='► Play', width=60)
+            callback_id = None
+
+            def animate():
+                nonlocal callback_id
+                if button.label == '► Play':
+                    button.label = '❚❚ Pause'
+                    callback_id = doc.add_periodic_callback(animate_update, 200)
+                else:
+                    button.label = '► Play'
+                    doc.remove_periodic_callback(callback_id)
+
+            def animate_update():
+                date = date_slider.value + delta
+                if date > end:
+                    date = start
+                date_slider.value = date
+            button.on_click(animate)
+            controls = column(select, date_slider, button, width=200)
         else:
             controls = column(select, width=200)
 
@@ -80,7 +99,6 @@ class Visualization:
 
             source = ColumnDataSource(self.cube_copy)
 
-            tile_provider = get_provider(CARTODBPOSITRON)
             p = figure(x_range=(-19000000, 21000000), y_range=(-5000000, 9000000),
                        x_axis_type="mercator", y_axis_type="mercator")
 
@@ -92,7 +110,7 @@ class Visualization:
             wheel_zoom = WheelZoomTool()
             p.tools = [PanTool(), wheel_zoom, SaveTool(), ResetTool(), hover]
             p.toolbar.active_scroll = wheel_zoom
-            p.add_tile(tile_provider)
+            p.add_tile(self.tile_provider)
             p.axis.visible = False
             p.toolbar.logo = None
             p.circle(x="longitude", y="latitude", size="__size__", alpha=0.5, source=source)
