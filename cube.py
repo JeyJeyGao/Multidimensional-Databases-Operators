@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import copy
 from visualization import Visualization
+import gc
 
 class Cube:
     def __init__(self, table_df):
@@ -146,6 +147,14 @@ class Cube:
         c1.element = c1.element.loc[joined_rows]
         c2.cube = c2.cube.loc[joined_rows]
         c2.element = c2.element.loc[joined_rows]
+        # add dimention of c2 to c1
+        for dim_name in c2.cube.columns:
+            if dim_name in dimentions_names:
+                continue
+            c1.cube[dim_name] = c2.cube[dim_name]
+        # merge element
         merged_elem = felem(c1.element, c2.element)
         c1.element = merged_elem
+        # gabage collection for saving memory
+        del c2
         return c1
