@@ -1,69 +1,118 @@
 from pandas import DataFrame
-from bokeh.io import show
-from bokeh.models import ColumnDataSource, HoverTool, PanTool, WheelZoomTool, SaveTool, ResetTool, DataTable
+from bokeh.models import ColumnDataSource, HoverTool, PanTool, WheelZoomTool, SaveTool, ResetTool, Select, \
+    Slider, FuncTickFormatter
 from bokeh.plotting import figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
+from bokeh.server.server import Server
+from bokeh.layouts import column, row
+from time import mktime
+import datetime
+from copy import deepcopy
 import math
+import random
+import string
 
 
-def show_map(cube: DataFrame, element: DataFrame):
-    print("Showing map.")
-    if not ("latitude" in cube.columns and "longitude" in cube.columns):
-        raise Exception("Must contain dimensions: 'latitude' and 'longitude'.")
-    if "date" in cube.columns or "DATE" in cube.columns:
-        show_interactive_map(cube, element)
-        return
-    else:
-        show_static_map(cube, element)
+class Visualization:
+    port = [5006]
 
+    def __init__(self, cube: DataFrame, element: DataFrame):
+        self.cube = deepcopy(cube)
+        self.cube[["longitude", "latitude"]] = [self.to_merc(x, y) for x, y in zip(self.cube["longitude"], self.cube["latitude"])]
+        for ind in element.columns:
+            self.cube["ELEMENT_" + ind] = element[ind]
+        self.cube_copy = deepcopy(self.cube)
+        self.date = "date" in self.cube.columns
+        self.server = Server({'/' + self.random_str(): self.bkapp}, port=self.port[0])
+        self.port[0] += 1
 
-def show_static_map(cube: DataFrame, element: DataFrame):
-    cube_copy = cube.copy()
-    cube_copy[["longitude", "latitude"]] = [to_merc(x, y) for x, y in zip(cube_copy["longitude"], cube_copy["latitude"])]
+    def show_map(self):
+        print("Showing map.")
+        if not ("latitude" in self.cube.columns and "longitude" in self.cube.columns):
+            raise Exception("Must contain dimensions: 'latitude' and 'longitude'.")
+        self.show_interactive_map("date" in self.cube.columns)
 
-    # TODO: hard coded now
-    # cube_copy["__size__"] = [math.log(x, 2) * 2 + 3 if x > 0 else 0 for x in cube_copy["confirmed"]]
-    cube_copy["__size__"] = 10
+    def show_interactive_map(self, date: bool):
+        try:
+            self.server.start()
+            self.server.io_loop.add_callback(self.server.show, "/")
+            print("Press Ctrl-C to continue.")
+            self.server.io_loop.start()
+        except KeyboardInterrupt:
+            pass
 
-    source = ColumnDataSource(cube_copy)
-    source.from_df(element)
+    def bkapp(self, doc):
+        def update(attr, old, new):
+            layout.children[1] = create_figure()
 
-    tile_provider = get_provider(CARTODBPOSITRON)
-    p = figure(x_range=(-19000000, 21000000), y_range=(-5000000, 9000000),
-               x_axis_type="mercator", y_axis_type="mercator")
+        options = [x for x in self.cube_copy.columns if (isinstance(self.cube_copy[x][self.cube.index[0]], int) or
+                                                         isinstance(self.cube_copy[x][self.cube.index[0]], float))
+                   and x != "longitude" and x != "latitude" and x != "__size__"]
+        select = Select(title="Circle Size (logarithm)", value=options[0], options=options)
+        select.on_change("value", update)
+        if self.date:
+            start = mktime(min(self.cube_copy["date"]).timetuple())
+            end = mktime(max(self.cube_copy["date"]).timetuple())
+            delta = mktime(datetime.date(2020, 4, 6).timetuple()) - mktime(datetime.date(2020, 4, 5).timetuple())
+            date_slider = Slider(title="Date", value=start, start=start, end=end, step=delta)
+            date_slider.on_change("value", update)
+            date_slider.format = FuncTickFormatter(code="""
+                function to_date(timestamp) {
+                    var date = new Date(timestamp * 1000);
+                    return date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate();
+                }
+                return to_date(tick);
+            """)
+            controls = column(select, date_slider, width=200)
+        else:
+            controls = column(select, width=200)
 
-    p.plot_width = 1100
-    p.plot_height = 650
+        def create_figure():
+            if self.date:
+                self.cube_copy = self.cube[self.cube["date"] == datetime.date.fromtimestamp(date_slider.value)]
+            if select.value:
+                self.cube_copy["__size__"] = [math.log(x, 2) * 2 + 3 if x > 0 else 0 for x in self.cube_copy[select.value]]
+            else:
+                self.cube_copy["__size__"] = 10
 
-    hover = HoverTool(tooltips=[(col, "@" + col) for col in cube_copy.columns if col != "longitude" and col != "latitude" and col != "__size__"])
-    wheel_zoom = WheelZoomTool()
-    p.tools = [PanTool(), wheel_zoom, SaveTool(), ResetTool(), hover]
-    p.toolbar.active_scroll = wheel_zoom
-    p.add_tile(tile_provider)
-    p.axis.visible = False
-    p.toolbar.logo = None
+            source = ColumnDataSource(self.cube_copy)
 
-    p.circle(x="longitude", y="latitude", size="__size__", alpha=0.5, source=source)
-    show(p)
+            tile_provider = get_provider(CARTODBPOSITRON)
+            p = figure(x_range=(-19000000, 21000000), y_range=(-5000000, 9000000),
+                       x_axis_type="mercator", y_axis_type="mercator")
 
+            p.plot_width = 1100
+            p.plot_height = 650
 
-def to_merc(long, lat):
-    k = 6378137
-    x = k * math.radians(long)
-    scale = x / long
-    y = 180 / math.pi * math.log(math.tan(math.pi / 4 + lat * (math.pi / 180) / 2)) * scale
-    return x, y
+            hover = HoverTool(tooltips=[(col, "@" + col) for col in self.cube_copy.columns if col != "longitude" and
+                                        col != "latitude" and col != "__size__" and col != "date"])
+            wheel_zoom = WheelZoomTool()
+            p.tools = [PanTool(), wheel_zoom, SaveTool(), ResetTool(), hover]
+            p.toolbar.active_scroll = wheel_zoom
+            p.add_tile(tile_provider)
+            p.axis.visible = False
+            p.toolbar.logo = None
+            p.circle(x="longitude", y="latitude", size="__size__", alpha=0.5, source=source)
+            return p
 
+        layout = row(controls, create_figure())
+        doc.add_root(layout)
 
-def show_interactive_map(cube: DataFrame, element: DataFrame):
-    pass
+    def to_merc(self, long, lat):
+        k = 6378137
+        x = k * math.radians(long)
+        scale = x / long
+        y = 180 / math.pi * math.log(math.tan(math.pi / 4 + lat * (math.pi / 180) / 2)) * scale
+        return x, y
 
+    def show_cube(self):
+        print("Showing cube.")
+        pass
 
-def show_cube(cube: DataFrame, element: DataFrame):
-    print("Showing cube.")
-    pass
+    def show_table(self):
+        print("Showing table.")
+        pass
 
-
-def show_table(cube: DataFrame, element: DataFrame):
-    print("Showing table.")
-    pass
+    def random_str(self, length=7):
+        letters = string.ascii_lowercase
+        return ''.join(random.choice(letters) for i in range(length))
