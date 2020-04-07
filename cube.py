@@ -1,7 +1,7 @@
 import pandas as pd 
 import numpy as np
 import copy
-import visualization
+from visualization import Visualization
 
 class Cube:
     def __init__(self, table_df):
@@ -32,13 +32,13 @@ class Cube:
     def visualize(self, type=None):
         if not type:
             if self.get_num_dimensions() <= 3:
-                visualization.show_cube(self.cube, self.element)
+                Visualization(self.cube, self.element).show_cube()
             else:
-                visualization.show_table(self.cube, self.element)
+                Visualization(self.cube, self.element).show_table()
         elif type == "table":
-            visualization.show_table(self.cube, self.element)
+            Visualization(self.cube, self.element).show_table()
         elif type == "map":
-            visualization.show_map(self.cube, self.element)
+            Visualization(self.cube, self.element).show_map()
         
     def pull(self, dimentions_name):
         if dimentions_name not in self.element.columns:
