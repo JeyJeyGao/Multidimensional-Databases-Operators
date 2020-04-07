@@ -1,6 +1,7 @@
 from pandas import DataFrame
+from bokeh.io import show
 from bokeh.models import ColumnDataSource, HoverTool, PanTool, WheelZoomTool, SaveTool, ResetTool, Select, \
-    Slider, FuncTickFormatter
+    Slider, FuncTickFormatter, DataTable, TableColumn, DateFormatter
 from bokeh.plotting import figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 from bokeh.server.server import Server
@@ -17,12 +18,14 @@ class Visualization:
     port = [5006]
 
     def __init__(self, cube: DataFrame, element: DataFrame):
+        self.element = element
+        self.original_cube = cube
         self.cube = deepcopy(cube)
         self.cube[["longitude", "latitude"]] = [self.to_merc(x, y) for x, y in zip(self.cube["longitude"], self.cube["latitude"])]
         for ind in element.columns:
             self.cube["ELEMENT_" + ind] = element[ind]
         self.cube_copy = deepcopy(self.cube)
-        self.date = "date" in self.cube.columns
+        self.date = "date" in self.cube.columns and min(self.cube["date"]) != max(self.cube["date"])
         self.server = Server({'/' + self.random_str(): self.bkapp}, port=self.port[0])
         self.port[0] += 1
 
@@ -111,7 +114,15 @@ class Visualization:
 
     def show_table(self):
         print("Showing table.")
-        pass
+        cube_copy = deepcopy(self.original_cube)
+        for col in self.element.columns:
+            cube_copy["ELEMENT_" + col] = self.element[col]
+        source = ColumnDataSource(cube_copy)
+        columns = [TableColumn(field=x, title=x) if "date" not in x else
+                   TableColumn(field=x, title=x, formatter=DateFormatter()) for x in cube_copy.columns]
+        dt = DataTable(source=source, columns=columns, width=len(columns) * 150, height=800, editable=True)
+
+        show(dt)
 
     def random_str(self, length=7):
         letters = string.ascii_lowercase
