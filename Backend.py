@@ -88,9 +88,17 @@ class Backend:
         table_df = pd.DataFrame(data=table_np[1:,0:], columns=table_np[0,0:])
         return table_df
 
-    def get_cube(self, table_name):
+    def get_cube(self, table_name, element_num_dimension=0):
         table_df = self.get_table(table_name)
-        return Cube(table_df)
+        cube = Cube(table_df)
+        if element_num_dimension > 0:
+            if element_num_dimension >= cube.get_num_dimensions():
+                raise Exception("Error: required 0 <= element_num_dimension < cube.get_num_dimensions().")
+            print(cube.get_dimension_names()[-element_num_dimension:])
+            for c in cube.get_dimension_names()[-element_num_dimension:]:
+                cube = cube.push(c)
+                del cube.cube[c]
+        return cube
 
     def __init__(self):
         pass
