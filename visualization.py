@@ -6,6 +6,7 @@ from bokeh.plotting import figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 from bokeh.server.server import Server
 from bokeh.layouts import column, row
+import plotly.express as px
 from time import mktime
 import datetime
 from copy import deepcopy
@@ -176,13 +177,15 @@ class Visualization:
         for col in self.element.columns:
             cube[col] = self.element[col]
         hover = HoverTool(tooltips=[(x, "@" + x) for x in cube.columns if "__" not in x])
-        f.tools = [PanTool(), WheelZoomTool(), SaveTool(), ResetTool(), hover]
+        zoom_tool = WheelZoomTool()
+        f.tools = [PanTool(), zoom_tool, SaveTool(), ResetTool(), hover]
+        f.toolbar.active_scroll = zoom_tool
         f.toolbar.logo = None
 
         source = ColumnDataSource(cube)
 
         label = LabelSet(x=d, text="__label__", y_offset=5, source=source)
-        f.circle(x=d, source=source)
+        f.circle(x=d, source=source, size=10)
         f.add_layout(label)
         show(f)
 
@@ -206,18 +209,31 @@ class Visualization:
         for col in self.element.columns:
             cube[col] = self.element[col]
         hover = HoverTool(tooltips=[(x, "@" + x) for x in cube.columns if "__" not in x])
-        f.tools = [PanTool(), WheelZoomTool(), SaveTool(), ResetTool(), hover]
+        zoom_tool = WheelZoomTool()
+        f.tools = [PanTool(), zoom_tool, SaveTool(), ResetTool(), hover]
+        f.toolbar.active_scroll = zoom_tool
         f.toolbar.logo = None
 
         source = ColumnDataSource(cube)
 
         label = LabelSet(x=d1, y=d2, text="__label__", y_offset=5, source=source)
-        f.circle(x=d1, y=d2, source=source)
+        f.circle(x=d1, y=d2, source=source, size=10)
         f.add_layout(label)
         show(f)
 
     def show_cube_3d(self):
-        pass
+        cube = deepcopy(self.original_cube)
+
+        d1 = cube.columns[0]
+        d2 = cube.columns[1]
+        d3 = cube.columns[2]
+
+        for col in self.element.columns:
+            cube[col] = self.element[col]
+
+        f = px.scatter_3d(cube, x=d1, y=d2, z=d3, category_orders={
+            d1: sorted(set(cube[d1])), d2: sorted(set(cube[d2])), d3: sorted(set(cube[d3]))}, hover_data=cube)
+        f.show()
 
     def random_str(self, length=7):
         letters = string.ascii_lowercase
