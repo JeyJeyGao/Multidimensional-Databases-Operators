@@ -27,7 +27,12 @@ class Visualization:
             self.cube["ELEMENT_" + ind] = element[ind]
         self.cube_copy = deepcopy(self.cube)
         self.date = "date" in self.cube.columns and min(self.cube["date"]) != max(self.cube["date"])
-        self.server = Server({'/' + self.random_str(): self.bkapp}, port=self.port[0])
+        while True:
+            try:
+                self.server = Server({'/' + self.random_str(): self.bkapp}, port=self.port[0])
+                break
+            except:
+                self.port[0] += 1
         self.tile_provider = get_provider(CARTODBPOSITRON)
         self.port[0] += 1
 
@@ -130,9 +135,7 @@ class Visualization:
     def show_cube(self):
         print("Showing cube.")
         dim = len(self.original_cube.columns)
-        print(dim)
         if dim == 1:
-            print("1d")
             self.show_cube_1d()
         elif dim == 2:
             self.show_cube_2d()
@@ -156,17 +159,25 @@ class Visualization:
     def show_cube_1d(self):
         cube = deepcopy(self.original_cube)
         d = cube.columns[0]
-        f = figure(x_range=sorted(set(cube[d])))
+        f = figure(x_range=[str(x) if isinstance(x, datetime.date) else x for x in sorted(set(cube[d]))])
+        f.xaxis.axis_label = d
+        f.width = 900
         f.height = 200
         f.yaxis.visible = False
 
-        cube["__label__"] = ["<{}>".format(", ".join([self.element[x][d]
+        # deal with datetime type
+        for c in cube.columns:
+            if isinstance(cube[c][cube.index[0]], datetime.date):
+                cube[c] = [str(x) for x in cube[c]]
+
+        cube["__label__"] = ["<{}>".format(", ".join([str(self.element[x][d])
                                                       for x in self.element.columns]))
                              for d in self.element.index]
         for col in self.element.columns:
             cube[col] = self.element[col]
         hover = HoverTool(tooltips=[(x, "@" + x) for x in cube.columns if "__" not in x])
         f.tools = [PanTool(), WheelZoomTool(), SaveTool(), ResetTool(), hover]
+        f.toolbar.logo = None
 
         source = ColumnDataSource(cube)
 
@@ -176,7 +187,34 @@ class Visualization:
         show(f)
 
     def show_cube_2d(self):
-        pass
+        cube = deepcopy(self.original_cube)
+        d1, d2 = cube.columns[0], cube.columns[1]
+        f = figure(x_range=[str(x) if isinstance(x, datetime.date) else x for x in sorted(set(cube[d1]))],
+                   y_range=[str(x) if isinstance(x, datetime.date) else x for x in sorted(set(cube[d2]))])
+        f.width = 900
+        f.xaxis.axis_label = d1
+        f.yaxis.axis_label = d2
+
+        # deal with datetime type
+        for c in cube.columns:
+            if isinstance(cube[c][cube.index[0]], datetime.date):
+                cube[c] = [str(x) for x in cube[c]]
+
+        cube["__label__"] = ["<{}>".format(", ".join([str(self.element[x][d])
+                                                      for x in self.element.columns]))
+                             for d in self.element.index]
+        for col in self.element.columns:
+            cube[col] = self.element[col]
+        hover = HoverTool(tooltips=[(x, "@" + x) for x in cube.columns if "__" not in x])
+        f.tools = [PanTool(), WheelZoomTool(), SaveTool(), ResetTool(), hover]
+        f.toolbar.logo = None
+
+        source = ColumnDataSource(cube)
+
+        label = LabelSet(x=d1, y=d2, text="__label__", y_offset=5, source=source)
+        f.circle(x=d1, y=d2, source=source)
+        f.add_layout(label)
+        show(f)
 
     def show_cube_3d(self):
         pass
