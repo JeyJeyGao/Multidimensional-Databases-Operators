@@ -94,7 +94,6 @@ class Backend:
         if element_num_dimension > 0:
             if element_num_dimension >= cube.get_num_dimensions():
                 raise Exception("Error: required 0 <= element_num_dimension < cube.get_num_dimensions().")
-            print(cube.get_dimension_names()[-element_num_dimension:])
             for c in cube.get_dimension_names()[-element_num_dimension:]:
                 cube = cube.push(c)
                 del cube.cube[c]

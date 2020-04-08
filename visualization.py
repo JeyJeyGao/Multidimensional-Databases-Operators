@@ -1,7 +1,7 @@
 from pandas import DataFrame
 from bokeh.io import show
 from bokeh.models import ColumnDataSource, HoverTool, PanTool, WheelZoomTool, SaveTool, ResetTool, Select, \
-    Slider, FuncTickFormatter, DataTable, TableColumn, DateFormatter, Button
+    Slider, FuncTickFormatter, DataTable, TableColumn, DateFormatter, Button, Axis, LabelSet
 from bokeh.plotting import figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 from bokeh.server.server import Server
@@ -21,7 +21,8 @@ class Visualization:
         self.element = element
         self.original_cube = cube
         self.cube = deepcopy(cube)
-        self.cube[["longitude", "latitude"]] = [self.to_merc(x, y) for x, y in zip(self.cube["longitude"], self.cube["latitude"])]
+        if "longitude" in self.cube.columns and "latitude" in self.cube.columns:
+            self.cube[["longitude", "latitude"]] = [self.to_merc(x, y) for x, y in zip(self.cube["longitude"], self.cube["latitude"])]
         for ind in element.columns:
             self.cube["ELEMENT_" + ind] = element[ind]
         self.cube_copy = deepcopy(self.cube)
@@ -128,7 +129,17 @@ class Visualization:
 
     def show_cube(self):
         print("Showing cube.")
-        pass
+        dim = len(self.original_cube.columns)
+        print(dim)
+        if dim == 1:
+            print("1d")
+            self.show_cube_1d()
+        elif dim == 2:
+            self.show_cube_2d()
+        elif dim == 3:
+            self.show_cube_3d()
+        else:
+            print("Cannot visualize cube of dimension {}".format(dim))
 
     def show_table(self):
         print("Showing table.")
@@ -141,6 +152,34 @@ class Visualization:
         dt = DataTable(source=source, columns=columns, width=len(columns) * 150, height=800, editable=True)
 
         show(dt)
+
+    def show_cube_1d(self):
+        cube = deepcopy(self.original_cube)
+        d = cube.columns[0]
+        f = figure(x_range=sorted(set(cube[d])))
+        f.height = 200
+        f.yaxis.visible = False
+
+        cube["__label__"] = ["<{}>".format(", ".join([self.element[x][d]
+                                                      for x in self.element.columns]))
+                             for d in self.element.index]
+        for col in self.element.columns:
+            cube[col] = self.element[col]
+        hover = HoverTool(tooltips=[(x, "@" + x) for x in cube.columns if "__" not in x])
+        f.tools = [PanTool(), WheelZoomTool(), SaveTool(), ResetTool(), hover]
+
+        source = ColumnDataSource(cube)
+
+        label = LabelSet(x=d, text="__label__", y_offset=5, source=source)
+        f.circle(x=d, source=source)
+        f.add_layout(label)
+        show(f)
+
+    def show_cube_2d(self):
+        pass
+
+    def show_cube_3d(self):
+        pass
 
     def random_str(self, length=7):
         letters = string.ascii_lowercase
