@@ -104,31 +104,35 @@ class Cube:
     # dimentions_names = [...] is a list of dimentions' names that cube and cube2 shared
     # f = [f...]; f2 = [f...]; are the funcitons that will apply for each dimention of cube and cube 2
     # felem(elem, elem2)->merged_elem is the function that will apply when the element of cube and the element of cube2 are going to be merged
-    def join(self, cube2, felem, dimentions_names=None, f=None, f2=None):
+    # defalue values:
+    #   felem: merge the columns of each elemnent
+    #   dimentions_names: the comment dimention of each data cube
+    #   f & f2: y = x
+    def join(self, cube2, felem=None, dimentions_names=[], f=[], f2=[]):
         # validation phase
+        #   make sure f and f2 have the same length as the shared dimentions_names
+        if len(f) != len(dimentions_names) or len(f2) != len(dimentions_names):
+            print("Error: f or f2 funcitons list doesn't have the same length as share dimentions_names")
+            return self
         #   make sure dimentions_names are inclued in both cube and cube2
-        if dimentions_names == None:
+        if len(dimentions_names) == 0:
             dimentions_names = list(set(self.cube.columns) & set(cube2.cube.columns))
         for dim_name in dimentions_names:
             if dim_name not in self.cube.columns:
                 print("Error: {} is not a dimention of this cube".format(dim_name))
                 return self 
-            elif dim_name not in cube2.columns:
+            elif dim_name not in cube2.cube.columns:
                 print("Error: {} is not a dimention of this cube2".format(dim_name))
                 return self 
-        #   make sure f and f2 have the same length as the shared dimentions_names
-        if len(f) != len(dimentions_names) or len(f2) != len(dimentions_names):
-            print("Error: f or f2 funcitons list doesn't have the same length as share dimentions_names")
-            return self
         # copy data
         c1 = copy.deepcopy(self)
         c2 = copy.deepcopy(cube2)
         # Dimmentions transform phase
         #   apply f to cube and f2 to cube2
         for i, dim_name in enumerate(dimentions_names):
-            if f is not None:
+            if len(f) != 0:
                 c1 = self.dimention_transform(c1, dim_name, f[i])
-            if f2 is not None:
+            if len(f2) != 0:
                 c2 = self.dimention_transform(c2, dim_name, f2[i])
             if c1 == None or c2 == None:
                 return self
@@ -136,23 +140,24 @@ class Cube:
         #   get the share value and shared rows for each dimention
         shared_rows = [] # the shared rows for each dimention
         for i, dim_name in enumerate(dimentions_names):
-            shared_val = list(set(c1.cube[dim_name] & set(c2.cube[dim_name])))
+            shared_val = list(set(list(c1.cube[dim_name])) & set(list(c2.cube[dim_name])))
             idx1 = c1.cube[dim_name].apply(lambda x: x in shared_val)
             idx2 = c2.cube[dim_name].apply(lambda x: x in shared_val)
-            shared_rows.append(set(idx1) & set(idx2))
+            shared_rows.append([idx1, idx2])
         joined_rows = shared_rows[0]
-        for dim_shared_rows in shared_rows:
-            joined_rows = joined_rows & dim_shared_rows
-        c1.cube = c1.cube.loc[joined_rows]
-        c1.element = c1.element.loc[joined_rows]
-        c2.cube = c2.cube.loc[joined_rows]
-        c2.element = c2.element.loc[joined_rows]
+        for i, dim_name in enumerate(dimentions_names):
+            c1.cube = c1.cube.loc[shared_rows[i][0]]
+            c1.element = c1.element.loc[shared_rows[i][0]]
+            c2.cube = c2.cube.loc[shared_rows[i][1]]
+            c2.element = c2.element.loc[shared_rows[i][1]]
         # add dimention of c2 to c1
         for dim_name in c2.cube.columns:
             if dim_name in dimentions_names:
                 continue
             c1.cube[dim_name] = c2.cube[dim_name]
         # merge element
+        if felem == None:
+            felem = lambda x,y: pd.concat([x, y], axis=1)
         merged_elem = felem(c1.element, c2.element)
         c1.element = merged_elem
         # gabage collection for saving memory
