@@ -105,10 +105,11 @@ class Cube:
     # f = [f...]; f2 = [f...]; are the funcitons that will apply for each dimention of cube and cube 2
     # felem(elem, elem2)->merged_elem is the function that will apply when the element of cube and the element of cube2 are going to be merged
     # defalue values:
-    #   felem: merge the columns of each elemnent
+    #   felem: c1.elem and c2.elem, input is (row in c1.elem, row in c2.elem)
+    #   felem_names: the column names after merge the element
     #   dimentions_names: the comment dimention of each data cube
     #   f & f2: y = x
-    def join(self, cube2, felem=None, dimentions_names=[], f=[], f2=[]):
+    def join(self, cube2, felem=None, felem_names=[], dimentions_names=[], f=[], f2=[]):
         # validation phase
         #   make sure f and f2 have the same length as the shared dimentions_names
         if len(f) != len(dimentions_names) or len(f2) != len(dimentions_names):
@@ -137,29 +138,45 @@ class Cube:
             if c1 == None or c2 == None:
                 return self
         # Merge phase
-        #   get the share value and shared rows for each dimention
-        shared_rows = [] # the shared rows for each dimention
-        for i, dim_name in enumerate(dimentions_names):
-            shared_val = list(set(list(c1.cube[dim_name])) & set(list(c2.cube[dim_name])))
-            idx1 = c1.cube[dim_name].apply(lambda x: x in shared_val)
-            idx2 = c2.cube[dim_name].apply(lambda x: x in shared_val)
-            shared_rows.append([idx1, idx2])
-        joined_rows = shared_rows[0]
-        for i, dim_name in enumerate(dimentions_names):
-            c1.cube = c1.cube.loc[shared_rows[i][0]]
-            c1.element = c1.element.loc[shared_rows[i][0]]
-            c2.cube = c2.cube.loc[shared_rows[i][1]]
-            c2.element = c2.element.loc[shared_rows[i][1]]
-        # add dimention of c2 to c1
-        for dim_name in c2.cube.columns:
-            if dim_name in dimentions_names:
-                continue
-            c1.cube[dim_name] = c2.cube[dim_name]
-        # merge element
-        if felem == None:
-            felem = lambda x,y: pd.concat([x, y], axis=1)
-        merged_elem = felem(c1.element, c2.element)
-        c1.element = merged_elem
-        # gabage collection for saving memory
-        del c2
+        c1_elem_names = c1.element.columns
+        c1_dim_names = c1.cube.columns
+        c2_elem_names = c2.element.columns
+        c2_dim_names = c2.cube.columns
+        merged_c1_elem = pd.DataFrame()
+        merged_c2_elem = pd.DataFrame()
+        for name in c1_elem_names:
+            c1 = c1.pull(name)
+        for name in c2_elem_names:
+            c2 = c2.pull(name)
+        c1.cube = pd.merge(c1.cube, c2.cube,  how='inner', left_on=dimentions_names, right_on = dimentions_names)
+        for name in c1_elem_names:
+            if name not in c2_elem_names:
+                merged_c1_elem[name] = c1.cube[name]
+            else:
+                merged_c1_elem[name] = c1.cube[name + "_x"]
+
+        for name in c2_elem_names:
+            if name not in c1_elem_names:
+                merged_c2_elem[name] = c1.cube[name]
+            else:
+                merged_c2_elem[name] = c1.cube[name + "_y"]
+
+        if felem is None:
+            # if felem is not defined, keep both of the element
+            c1.element = pd.concat([merged_c1_elem, merged_c2_elem], axis=1)
+        else:
+            elem1_list = merged_c1_elem.values.tolist()
+            elem2_list = merged_c2_elem.values.tolist()
+            merged_elem = []
+            for i in range(0, len(elem1_list)):
+                merged_elem.append(felem(elem1_list[i], elem2_list[i]))
+            if len(felem_names) == len(merged_elem[0]):
+                merged_elem = np.array([felem_names] + merged_elem)
+            else:
+                merged_elem = np.array(["dim" + str(i) for i in range(len(merged_elem[0]))] + merged_elem)
+            c1.element = table_df = pd.DataFrame(data=merged_elem[1:,0:], columns=merged_elem[0,0:])
+        # delete dimension that was not exist
+        for name in c1.cube.columns:
+            if name not in c1_dim_names and name not in c2_dim_names:
+                c1.cube = c1.cube.drop(columns=[name])
         return c1
