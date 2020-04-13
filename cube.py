@@ -99,8 +99,8 @@ class Cube:
             return None
         cube = self.__dim_elem_merge(cube)
         res_cube = copy.deepcopy(cube)
-        for index, row in cube.cube.iterrows():
-            for i, name in enumerate(input_dim_names):
+        for i, name in enumerate(input_dim_names):
+            for index, row in cube.cube.iterrows():
                 if name not in cube.cube.columns:
                     print("Error: {} is not a dimension of this cube".format(name))
                     return cube
@@ -115,8 +115,10 @@ class Cube:
                 if len(maped_vals) > 1:
                     for value in maped_vals[1:]:
                         row[name] = value
-                        res_cube.cube.append(row)
-        res_cube.cube.rename(columns={input_dim_names[i]: output_dim_names[i] for i in range(len(input_dim_names))})
+                        res_cube.cube = res_cube.cube.append(row)
+            res_cube.cube = res_cube.cube.reset_index(drop=True)
+            cube.cube = copy.deepcopy(res_cube.cube)
+        res_cube.cube = res_cube.cube.rename(columns={input_dim_names[i]: output_dim_names[i] for i in range(len(input_dim_names))})
         res_cube = self.__dim_elem_separate(res_cube)
         return res_cube
     
@@ -139,7 +141,23 @@ class Cube:
         ).reset_index()
         c = self.__dim_elem_separate(c)
         return c
-        
+
+    def associate(self, cube2, felem=None, felem_names=[], dimensions_names=[], f=[], dimensions_names2=[], f2=[]):
+        # check: each dimension of C1 be joined with some dimension of C.
+        c1_dim_names = list(self.cube.columns)
+        c2_dim_names = list(cube2.cube.columns)
+        for i, name in enumerate(dimensions_names):
+            if name in dimensions_names:
+                c1_dim_names[i] = dimensions_names[name]
+        for i, name in enumerate(dimensions_names2):
+            if name in dimensions_names2:
+                c2_dim_names[i] = dimensions_names2[name]
+        for name in c1_dim_names:
+            if name not in c2_dim_names:
+                print("Error: each dimension of C1 be joined with some dimension of C.")
+                return self
+        return self.join(cube2, felem, felem_names, dimensions_names, f, dimensions_names2, f2)
+            
 
     # cube2 is the other cube to be joined
     # dimensions_names = [...] is a list of dimensions' names that cube and cube2 shared
@@ -194,15 +212,17 @@ class Cube:
     # dimension_names: [[input dimension names],[output dimension names]]
     #   if no [output dimension names], that is means keep the original names
     def __parse_dimension_names(self, dimension_names):
-        if type(dimension_names[0]) == list:
-            input_dim_names = dimension_names[0]
-            if len(dimension_names) == 1:
-                output_dim_names = input_dim_names
-            else:
-                output_dim_names = dimension_names[1]
-        else:
+        if type(dimension_names) == dict:
+            input_dim_names = []
+            output_dim_names = []
+            for in_name, out_name in dimension_names.items():
+                input_dim_names.append(in_name)
+                output_dim_names.append(out_name)
+        elif type(dimension_names) == list:
             input_dim_names = dimension_names
             output_dim_names = dimension_names
+        else:
+            print("Error: dimension_names is ilegal.")
         return [input_dim_names, output_dim_names]
     
         # return a cube: dimension and element are merged    

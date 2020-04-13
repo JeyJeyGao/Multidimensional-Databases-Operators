@@ -41,16 +41,16 @@ if __name__ == "__main__":
     C.show()
     C1 = backend.get_cube("example_join_right",1)
     C1.show()
-    dimension_name = [["D1"], ["D1"]]
-    f1 = [lambda x:[int(x)+1]]
-    f2 = [lambda x:[int(x)+1]]
+    dimension_name = {"D1":"D1"}
+    f1 = [lambda x:[int(x)]]
+    f2 = [lambda x:[int(x)]]
     felem = lambda e1_row, e2_row: [int(e1_row[0]) / int(e2_row[0])]
     joined_C = C.join(C1, felem, ["merged_val"], dimension_name, f1, dimension_name, f2)
     # joined_C = C.join(C1)
     joined_C.show()
 
     # example merge operator on the paper
-    dimension_name = [["date", "product"], ["month", "category"]]
+    dimension_name = {"date":"month", "product":"category"}
     f = [
         lambda x: [x.replace(day = 1)],
         lambda x: ["cat1" if x=="p1" or x=="p2" else "cat2"]
@@ -58,3 +58,22 @@ if __name__ == "__main__":
     felem = lambda x : x.sum()
     merged_2d = example_2d.merge(felem, dimension_name, f)
     merged_2d.show()
+
+    #example associate
+    c = merged_2d.restriction("month", lambda x:x == datetime.date(2020,2,1) or x == datetime.date(2020,1,1))
+    c.show()
+
+    dimension_name = {"month":"date", "category":"product"}
+    dimension_name2 = {"date":"date", "product":"product"}
+    f = [
+        lambda x: [x.replace(day = i) for i in range(1,5)],
+        lambda x: ["p1","p2"] if x=="cat1" else ["p3","p4"]
+    ]
+    f2 = [
+        lambda x: [x],
+        lambda x: [x]
+    ]
+    felem = lambda x, y: [float(y[0]) / float(x[0])]
+    felem_names = ["merged_val"]
+    associated_cube = c.associate(example_2d, felem, felem_names, dimension_name, f, dimension_name2, f2)
+    associated_cube.show()
