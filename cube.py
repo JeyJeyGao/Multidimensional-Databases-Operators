@@ -131,7 +131,14 @@ class Cube:
             return self
         c = copy.deepcopy(self)
         c = self.__dimension_transform(c, dimension_names, f)
+        dim_names = list(c.cube.columns)
         c = self.__dim_elem_merge(c)
+        print(c.cube)
+        c.cube = c.cube.groupby(dim_names).agg(
+            felem
+        ).reset_index()
+        c = self.__dim_elem_separate(c)
+        return c
         
 
     # cube2 is the other cube to be joined

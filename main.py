@@ -33,8 +33,9 @@ if __name__ == "__main__":
     # corona_test = backend.get_cube("corona_test")
     # corona_test = corona_test.restriction("date", lambda x: x == datetime.date(2020, 3, 28)).destroy("date")
     # example_1d = backend.get_cube("example_1d", 2)
-    # example_2d = backend.get_cube("example_2d", 1)
-    # example_3d = backend.get_cube("example_3d", 1)
+    example_2d = backend.get_cube("example_2d", 1)
+     # example_3d = backend.get_cube("example_3d", 1)
+
     # example join operator on the paper
     C = backend.get_cube("example_join_left",1)
     C.show()
@@ -47,3 +48,13 @@ if __name__ == "__main__":
     joined_C = C.join(C1, felem, ["merged_val"], dimension_name, f1, dimension_name, f2)
     # joined_C = C.join(C1)
     joined_C.show()
+
+    # example merge operator on the paper
+    dimension_name = [["date", "product"], ["month", "category"]]
+    f = [
+        lambda x: [x.replace(day = 1)],
+        lambda x: ["cat1" if x=="p1" or x=="p2" else "cat2"]
+    ]
+    felem = lambda x : x.sum()
+    merged_2d = example_2d.merge(felem, dimension_name, f)
+    merged_2d.show()
