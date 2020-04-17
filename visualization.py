@@ -6,6 +6,7 @@ from bokeh.plotting import figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 from bokeh.server.server import Server
 from bokeh.layouts import column, row
+from bokeh.embed import components
 import plotly.express as px
 from time import mktime
 import datetime
@@ -139,7 +140,7 @@ class Visualization:
         if dim == 1:
             self.show_cube_1d()
         elif dim == 2:
-            self.show_cube_2d()
+            return self.show_cube_2d()
         elif dim == 3:
             self.show_cube_3d()
         else:
@@ -219,7 +220,9 @@ class Visualization:
         label = LabelSet(x=d1, y=d2, text="__label__", y_offset=5, source=source)
         f.circle(x=d1, y=d2, source=source, size=10)
         f.add_layout(label)
-        show(f)
+        # show(f)
+        # TODO change this part
+        return components(f)
 
     def show_cube_3d(self):
         cube = deepcopy(self.original_cube)

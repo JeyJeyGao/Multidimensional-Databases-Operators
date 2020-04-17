@@ -32,7 +32,7 @@ class Cube:
     def visualize(self, type=None):
         if not type:
             if self.get_num_dimensions() <= 3:
-                Visualization(self.cube, self.element).show_cube()
+                return Visualization(self.cube, self.element).show_cube()
             else:
                 Visualization(self.cube, self.element).show_table()
         elif type == "table":

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>USC DBLAB Coronavirus</title>
+<!--    <script src="vue.js"></script>-->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
+    <link rel="shortcut icon" href="https://www.usc.edu/wp-content/themes/usc-homepage-2017/assets/images/favicon.ico?v=4.3.10">
+</head>
+<body>
+    <div id="app">
+        <input type="text" v-on:input="changeText">
+        <p>{{ title }}</p>
+        <iframe src="api/map" style="height: 650px; width: 1000px"></iframe>
+    </div>
+</body>
+<script src="js/script.js"></script>
+</html>
