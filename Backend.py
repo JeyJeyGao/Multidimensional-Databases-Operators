@@ -117,6 +117,7 @@ class Backend:
             with open(os.path.join("mysql_setup", output_name)) as f:
                 for q in f:
                     cursor.execute(q)
+            os.remove(os.path.join("mysql_setup", output_name))
 
         update_table(coronavirus.table_name, coronavirus.output_name, coronavirus)
         update_table(coronavirus_location.table_name, coronavirus_location.output_name, coronavirus_location)

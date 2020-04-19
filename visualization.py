@@ -6,7 +6,6 @@ from bokeh.plotting import figure
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 from bokeh.server.server import Server
 from bokeh.layouts import column, row
-from bokeh.embed import components
 import plotly.express as px
 from time import mktime
 import datetime
@@ -140,7 +139,7 @@ class Visualization:
         if dim == 1:
             self.show_cube_1d()
         elif dim == 2:
-            return self.show_cube_2d()
+            self.show_cube_2d()
         elif dim == 3:
             self.show_cube_3d()
         else:
@@ -220,9 +219,7 @@ class Visualization:
         label = LabelSet(x=d1, y=d2, text="__label__", y_offset=5, source=source)
         f.circle(x=d1, y=d2, source=source, size=10)
         f.add_layout(label)
-        # show(f)
-        # TODO change this part
-        return components(f)
+        show(f)
 
     def show_cube_3d(self):
         cube = deepcopy(self.original_cube)
@@ -241,3 +238,36 @@ class Visualization:
     def random_str(self, length=7):
         letters = string.ascii_lowercase
         return ''.join(random.choice(letters) for i in range(length))
+
+
+def map_html(cube, value, tile_provider):
+    from bokeh.embed import components
+    element = cube.element
+    cube = deepcopy(cube.cube)
+    if "longitude" in cube.columns and "latitude" in cube.columns:
+        cube[["longitude", "latitude"]] = [Visualization.to_merc(1, x, y) for x, y in zip(cube["longitude"], cube["latitude"])]
+    for ind in element.columns:
+        cube["ELEMENT_" + ind] = element[ind]
+
+    cube_copy = deepcopy(cube)
+    cube_copy["__size__"] = [math.log(x, 2) * 2 + 3 if x > 0 else 0 for x in cube_copy[value]]
+
+    source = ColumnDataSource(cube_copy)
+
+    p = figure(x_range=(-19000000, 21000000), y_range=(-5000000, 9000000),
+               x_axis_type="mercator", y_axis_type="mercator")
+
+    p.plot_width = 1100
+    p.plot_height = 650
+
+    hover = HoverTool(tooltips=[(col, "@" + col) for col in cube_copy.columns if col != "longitude" and
+                                col != "latitude" and col != "__size__" and col != "date"])
+    wheel_zoom = WheelZoomTool()
+    p.tools = [PanTool(), wheel_zoom, SaveTool(), ResetTool(), hover]
+    p.toolbar.active_scroll = wheel_zoom
+    p.add_tile(tile_provider)
+    p.axis.visible = False
+    p.toolbar.logo = None
+    p.circle(x="longitude", y="latitude", size="__size__", alpha=0.5, source=source)
+    js, div = components(p)
+    return '<script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.0.0.min.js"></script>' + js + div

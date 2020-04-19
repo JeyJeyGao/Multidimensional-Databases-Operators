@@ -1,7 +1,7 @@
 import pandas as pd 
 import numpy as np
 import copy
-from visualization import Visualization
+from visualization import Visualization, map_html
 
 class Cube:
     def __init__(self, table_df):
@@ -29,16 +29,18 @@ class Cube:
     def get_num_dimensions(self):
         return len(self.cube.columns)
 
-    def visualize(self, type=None):
+    def visualize(self, type=None, value=None, tile_provider=None):
         if not type:
             if self.get_num_dimensions() <= 3:
-                return Visualization(self.cube, self.element).show_cube()
+                Visualization(self.cube, self.element).show_cube()
             else:
                 Visualization(self.cube, self.element).show_table()
         elif type == "table":
             Visualization(self.cube, self.element).show_table()
         elif type == "map":
             Visualization(self.cube, self.element).show_map()
+        elif type == "map_html":
+            return map_html(self, value, tile_provider)
         
     def pull(self, dimensions_name, new_name=None):
         if dimensions_name not in self.element.columns:

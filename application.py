@@ -3,7 +3,9 @@ import threading
 import logging
 import logging.handlers
 from Backend import Backend
+from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 import sys
+import os
 import datetime
 import time
 
@@ -11,7 +13,7 @@ import time
 UPDATE_TIME = 3  # 3AM
 HOST = "104-238-213-147.cloud-xip.io"
 
-app = Flask(__name__, static_folder="web_app")
+app = Flask(__name__, static_folder="web_app/dist")
 # Create logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -32,25 +34,23 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
-@app.route("/")
-def index():
-    return app.send_static_file('index.html')
-
-
-@app.route('/js/<path:p>')
-def send_js(p):
-    return send_from_directory("web_app/js", p)
-
-
-@app.route('/css/<path:p>')
-def send_css(p):
-    return send_from_directory("web_app/css", p)
-
-
 @app.route("/api/map")
 def get_map():
-    logger.info("Get map ")
-    return '<script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.0.0.min.js"></script>' + js + div
+    logger.info("Get map")
+    tile_provider = get_provider(CARTODBPOSITRON)
+    html = corona_joined.restriction("date", lambda x: x == datetime.date(2020, 4, 17)).destroy("date") \
+        .visualize("map_html", "confirmed", tile_provider)
+    return html
+
+
+@app.route("/")
+def send_index():
+    return app.send_static_file("index.html")
+
+
+@app.route("/<path:path>")
+def send_file(path):
+    return app.send_static_file(path)
 
 
 def run_data_update():
@@ -75,8 +75,7 @@ if __name__ == "__main__":
     try:
         backend = Backend()
         backend.start_connection()
-        example_2d = backend.get_cube("example_2d", 1)
-        js, div = example_2d.visualize()
+        corona_joined = backend.get_cube("corona_joined")
     except Exception as e:
         logger.error("Error fetching database: %s", e)
 
@@ -84,7 +83,7 @@ if __name__ == "__main__":
     t1 = threading.Thread(name="Database", target=run_data_update)
     if len(sys.argv) > 1 and sys.argv[1].lower() == "prod":
         t2 = threading.Thread(name="Server", target=lambda x: app.run(port=x, host=HOST), args=(80,))
+        t1.start()
     else:
         t2 = threading.Thread(name="Server", target=lambda x: app.run(port=x), args=(8080,))
-    t1.start()
     t2.start()
