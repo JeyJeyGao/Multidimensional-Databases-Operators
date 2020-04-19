@@ -7,6 +7,8 @@ import numpy as np
 import os
 import mysql_setup.coronavirus as coronavirus
 import mysql_setup.coronavirus_location as coronavirus_location
+import mysql_setup.county_cases as county_cases
+import mysql_setup.corona_joined as corona_joined
 from cube import Cube
 
 class Backend:
@@ -118,6 +120,8 @@ class Backend:
 
         update_table(coronavirus.table_name, coronavirus.output_name, coronavirus)
         update_table(coronavirus_location.table_name, coronavirus_location.output_name, coronavirus_location)
+        update_table(county_cases.table_name, county_cases.output_name, county_cases)
+        update_table(corona_joined.table_name, corona_joined.output_name, corona_joined)
         self.cnx.commit()
         print("CoronaVirus data updated.")
 

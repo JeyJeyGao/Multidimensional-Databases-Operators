@@ -16,7 +16,6 @@ def main():
     jhu_data.fetch_data()
 
     out_file = open(os.path.join(os.getcwd(), "mysql_setup", output_name), "w")
-    print("Writing data to SQL...")
 
     create_table = """CREATE TABLE {} (
      province_state VARCHAR (50),
@@ -33,7 +32,6 @@ def main():
 
     # used to retrieve US result
     daily_reports_dir = os.path.join(dir_prefix, "csse_covid_19_daily_reports")
-    print("Writing US data...")
     #######################################################################################################################
     # US Data from 2020-01-22 to 2020-01-31
     #######################################################################################################################
@@ -122,7 +120,6 @@ def main():
     #######################################################################################################################
     # Global Data
     #######################################################################################################################
-    print("Writing global data...")
     time_series_dir = os.path.join(dir_prefix, "csse_covid_19_time_series")
     confirmed_filename = os.path.join(time_series_dir, "time_series_covid19_confirmed_global.csv")
     death_filename = os.path.join(time_series_dir, "time_series_covid19_deaths_global.csv")
@@ -148,4 +145,3 @@ def main():
             cur_date += timedelta(1)
 
     out_file.close()
-    print("Finished writing.")

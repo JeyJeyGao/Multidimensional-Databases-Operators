@@ -15,7 +15,6 @@ def main():
     time_series_dir = os.path.join(dir_prefix, "csse_covid_19_time_series")
 
     out_file = open(os.path.join(os.getcwd(), "mysql_setup", output_name), "w")
-    print("Writing location data to SQL...")
     create_table = """CREATE TABLE {} (
      province_state VARCHAR (50),
      country_region VARCHAR (50) NOT NULL,
@@ -29,7 +28,6 @@ def main():
     #######################################################################################################################
     # US states locations
     #######################################################################################################################
-    print("Writing US locations...")
     data = pandas.read_csv(os.path.join(daily_reports_dir, "03-21-2020.csv"))
     us_data = data[data.get("Country/Region") == "US"]
     us_data = us_data[us_data.get("Province/State") != "US"]
@@ -41,7 +39,6 @@ def main():
     #######################################################################################################################
     # Global locations
     #######################################################################################################################
-    print("Writing global locations...")
     confirmed_filename = os.path.join(time_series_dir, "time_series_covid19_confirmed_global.csv")
     confirmed_data = pandas.read_csv(confirmed_filename)
 
@@ -58,5 +55,4 @@ def main():
             out_file.write("INSERT INTO {0} VALUES ({1}, '{2}', {3}, {4});\n".format(table_name, state,
                                                                                             country.replace("'", "\\'"),
                                                                                             latitude, longitude))
-    print("Done.")
     out_file.close()
