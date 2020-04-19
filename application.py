@@ -1,11 +1,10 @@
-from flask import Flask, send_from_directory
+from flask import Flask
 import threading
 import logging
 import logging.handlers
 from Backend import Backend
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 import sys
-import os
 import datetime
 import time
 
@@ -33,13 +32,18 @@ handler.setFormatter(formatter)
 # add Handler to Logger
 logger.addHandler(handler)
 
+# cubes
+corona_joined = None
+county_cases = None
+
 
 @app.route("/api/map")
 def get_map():
     logger.info("Get map")
     tile_provider = get_provider(CARTODBPOSITRON)
-    html = corona_joined.restriction("date", lambda x: x == datetime.date(2020, 4, 17)).destroy("date") \
-        .visualize("map_html", "confirmed", tile_provider)
+    html = county_cases.restriction("date", lambda x: x == datetime.date(2020, 4, 18)).destroy("date")\
+        .restriction("province_state", lambda x: x == "California").restriction("longitude", lambda x: x != 0) \
+        .visualize("map_html", "confirmed", tile_provider, False)
     return html
 
 
@@ -65,6 +69,9 @@ def run_data_update():
                 backend.update_coronavirus_data()
                 midnight_today = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
                 schedule = midnight_today + datetime.timedelta(days=1, hours=UPDATE_TIME)
+                global corona_joined, county_cases
+                corona_joined = backend.get_cube("corona_joined")
+                county_cases = backend.get_cube("county_cases")
                 logger.info("Update succeed. Scheduled for %s", schedule)
             except Exception as e:
                 logger.error("Error updating database: %s", e)
@@ -76,6 +83,7 @@ if __name__ == "__main__":
         backend = Backend()
         backend.start_connection()
         corona_joined = backend.get_cube("corona_joined")
+        county_cases = backend.get_cube("county_cases")
     except Exception as e:
         logger.error("Error fetching database: %s", e)
 

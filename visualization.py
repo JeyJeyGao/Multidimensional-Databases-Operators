@@ -240,7 +240,7 @@ class Visualization:
         return ''.join(random.choice(letters) for i in range(length))
 
 
-def map_html(cube, value, tile_provider):
+def map_html(cube, value, tile_provider, world_view):
     from bokeh.embed import components
     element = cube.element
     cube = deepcopy(cube.cube)
@@ -254,7 +254,15 @@ def map_html(cube, value, tile_provider):
 
     source = ColumnDataSource(cube_copy)
 
-    p = figure(x_range=(-19000000, 21000000), y_range=(-5000000, 9000000),
+    if world_view:
+        x_range = (-19000000, 21000000)
+        y_range = (-5000000, 9000000)
+    else:
+        padding = 500000
+        x_range = (min(cube_copy["longitude"]) - padding, max(cube_copy["longitude"]) + padding)
+        y_range = (min(cube_copy["latitude"]) - padding, max(cube_copy["latitude"]) + padding)
+
+    p = figure(x_range=x_range, y_range=y_range,
                x_axis_type="mercator", y_axis_type="mercator")
 
     p.plot_width = 1100
