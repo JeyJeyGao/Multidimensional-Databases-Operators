@@ -10,7 +10,7 @@ import time
 
 
 UPDATE_TIME = 3  # 3AM
-HOST = "104-238-213-147.cloud-xip.io"
+HOST = "104-238-213-178.cloud-xip.io"
 
 app = Flask(__name__, static_folder="web_app/dist")
 # Create logger
