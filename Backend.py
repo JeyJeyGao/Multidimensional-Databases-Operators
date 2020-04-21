@@ -9,6 +9,7 @@ import mysql_setup.coronavirus as coronavirus
 import mysql_setup.coronavirus_location as coronavirus_location
 import mysql_setup.county_cases as county_cases
 import mysql_setup.corona_joined as corona_joined
+from mysql_setup.jhu_data import fetch_data
 from cube import Cube
 
 class Backend:
@@ -119,6 +120,7 @@ class Backend:
                     cursor.execute(q)
             os.remove(os.path.join("mysql_setup", output_name))
 
+        fetch_data()
         update_table(coronavirus.table_name, coronavirus.output_name, coronavirus)
         update_table(coronavirus_location.table_name, coronavirus_location.output_name, coronavirus_location)
         update_table(county_cases.table_name, county_cases.output_name, county_cases)

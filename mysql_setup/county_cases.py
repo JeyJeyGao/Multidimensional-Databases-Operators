@@ -1,7 +1,6 @@
 import os
 from datetime import date, timedelta
 import pandas
-import mysql_setup.jhu_data as jhu_data
 
 
 table_name = "county_cases"
@@ -9,7 +8,6 @@ output_name = "county_cases.sql"
 
 
 def main():
-    jhu_data.fetch_data()
     out_file = open(os.path.join(os.getcwd(), "mysql_setup", output_name), "w")
 
     create_table = """CREATE TABLE {} (

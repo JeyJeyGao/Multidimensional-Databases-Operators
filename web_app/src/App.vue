@@ -18,8 +18,8 @@ export default {
   },
   data: function () {
     return {
-      // apiUrl: "http://localhost:8080"
-      apiUrl: "http://104-238-213-178.cloud-xip.io/"
+      // apiUrl: "http://localhost:5000"
+      apiUrl: ""
     }
   }
 }

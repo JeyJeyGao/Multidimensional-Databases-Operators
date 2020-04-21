@@ -1,15 +1,13 @@
 # Write location to SQL
 import os
 import pandas
-import mysql_setup.jhu_data as jhu_data
 
 
 table_name = "location"
 output_name = "corona_location.sql"
 
-def main():
-    jhu_data.fetch_data()
 
+def main():
     dir_prefix = os.path.join(os.getcwd(), "mysql_setup", "COVID-19", "csse_covid_19_data")
     daily_reports_dir = os.path.join(dir_prefix, "csse_covid_19_daily_reports")
     time_series_dir = os.path.join(dir_prefix, "csse_covid_19_time_series")

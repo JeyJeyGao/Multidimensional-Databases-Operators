@@ -1,0 +1,5 @@
+bokeh
+flask
+pandas
+mysql-connector-python
+plotly

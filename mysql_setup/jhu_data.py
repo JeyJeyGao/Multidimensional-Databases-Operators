@@ -1,15 +1,23 @@
-# install package by running 'pip install gitpython'
-import git
+import urllib
+import zipfile
+import shutil
 import os
 
-GIT_URL = "https://github.com/CSSEGISandData/COVID-19.git"
+GIT_URL = "https://github.com/CSSEGISandData/COVID-19/archive/master.zip"
+ZIP_NAME = os.path.join("mysql_setup", "COVID-19.zip")
+TEMP_DIR_NAME = os.path.join("mysql_setup", "COVID-19-master")
 DIR_NAME = os.path.join("mysql_setup", "COVID-19")
 
 
 def fetch_data():
-    try:
-        print("Cloning remote data...")
-        git.Repo.clone_from(GIT_URL, DIR_NAME)
-    except git.GitError:
-        print("Repository already exists. Pulling remote data...")
-        git.Repo(DIR_NAME).remotes.origin.pull()
+    if os.path.exists(ZIP_NAME):
+        os.remove(ZIP_NAME)
+    if os.path.exists(DIR_NAME):
+        shutil.rmtree(DIR_NAME)
+    print("Downloading remote data...")
+    urllib.request.urlretrieve(GIT_URL, ZIP_NAME)
+    print("Unzipping...")
+    with zipfile.ZipFile(ZIP_NAME, 'r') as zip_ref:
+        zip_ref.extractall("mysql_setup")
+    os.rename(TEMP_DIR_NAME, DIR_NAME)
+    print("Done.")
