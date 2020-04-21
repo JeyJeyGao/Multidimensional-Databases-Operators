@@ -110,6 +110,15 @@ def get_county_map(date, country_region, province_state):
     html = c.visualize("map_html", "confirmed", tile_provider, False)
     return html
 
+@app.route("/api/map/<date>/US/<province_state>/<county>")
+def get_single_county_map(date, province_state, county):
+    tile_provider = get_provider(CARTODBPOSITRON)
+    YY, MM, DD = date.split("-")
+    c = county_cases.restriction("date", lambda x:x==datetime.date(int(YY), int(MM), int(DD))).destroy("date").restriction("longitude", lambda x: x != 0)
+    c = c.restriction("province_state", lambda x:x==province_state).restriction("county", lambda x:x==county)
+    html = c.visualize("map_html", "confirmed", tile_provider, False)
+    return html
+
 
 def country_data(date):
     YY, MM, DD = date.split("-")
