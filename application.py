@@ -37,12 +37,50 @@ corona_joined = None
 county_cases = None
 country_location_cube = None
 location_cube = None
+
+
+
+def run_data_update():
+    global corona_joined, county_cases, location_cube, country_location_cube
+    try:
+        backend = Backend()
+        backend.start_connection()
+        corona_joined = backend.get_cube("corona_joined")
+        county_cases = backend.get_cube("county_cases")
+        location_cube = backend.get_cube(coronavirus_location.table_name)
+        country_location_cube = country_location()
+    except Exception as e:
+        logger.error("Error fetching database: %s", e)
+    schedule = datetime.datetime.now()
+    while True:
+        if datetime.datetime.now() >= schedule:
+            logger.info("Updating database.")
+            try:
+                backend = Backend()
+                backend.start_connection()
+                backend.update_coronavirus_data()
+                midnight_today = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
+                schedule = midnight_today + datetime.timedelta(days=1, hours=UPDATE_TIME)
+                corona_joined = backend.get_cube("corona_joined")
+                county_cases = backend.get_cube("county_cases")
+                location_cube = backend.get_cube(coronavirus_location.table_name)
+                country_location_cube = country_location()
+                logger.info("Update succeed. Scheduled for %s UTC", schedule)
+            except Exception as e:
+                logger.error("Error updating database: %s", e)
+        time.sleep(3600)
+
+
+t1 = threading.Thread(name="Database", target=run_data_update)
+t1.start()
+app = Flask(__name__, static_folder="web_app/dist")
+
 @app.route("/api/map")
 def get_map():
     logger.info("Get map")
     tile_provider = get_provider(CARTODBPOSITRON)
-    html = county_cases.restriction("date", lambda x: x == datetime.date(2020, 4, 18)).destroy("date")\
-        .restriction("province_state", lambda x: x == "California").restriction("longitude", lambda x: x != 0) \
+    html = corona_joined.restriction("date", lambda x: x == datetime.date(2020, 4, 18)).destroy("date") \
+        .restriction("country_region", lambda x: x == "Australia").restriction("longitude", lambda x: x != 0) \
         .visualize("map_html", "confirmed", tile_provider, False)
     return html
 
@@ -133,71 +171,6 @@ def get_county_data(date, country_region,province_state):
     for confirmed, death, county in data:
         res[county] = {"confirmed":confirmed, "death":death} 
     return json.dumps(res)
-
-
-@app.route("/")
-def send_index():
-    return app.send_static_file("index.html")
-
-
-@app.route("/<path:path>")
-def send_file(path):
-    return app.send_static_file(path)
-
-
-def run_data_update():
-    global corona_joined, county_cases
-    try:
-        backend = Backend()
-        backend.start_connection()
-        corona_joined = backend.get_cube("corona_joined")
-        county_cases = backend.get_cube("county_cases")
-    except Exception as e:
-        logger.error("Error fetching database: %s", e)
-    schedule = datetime.datetime.now()
-    while True:
-        if datetime.datetime.now() >= schedule:
-            logger.info("Updating database.")
-            try:
-                backend = Backend()
-                backend.start_connection()
-                backend.update_coronavirus_data()
-                midnight_today = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
-                schedule = midnight_today + datetime.timedelta(days=1, hours=UPDATE_TIME)
-                corona_joined = backend.get_cube("corona_joined")
-                county_cases = backend.get_cube("county_cases")
-                logger.info("Update succeed. Scheduled for %s UTC", schedule)
-            except Exception as e:
-                logger.error("Error updating database: %s", e)
-        time.sleep(3600)
-
-
-t1 = threading.Thread(name="Database", target=run_data_update)
-t1.start()
-app = Flask(__name__, static_folder="web_app/dist")
-if __name__ == "__main__":
-    try:
-        backend = Backend()
-        backend.start_connection()
-        corona_joined = backend.get_cube("corona_joined")
-        county_cases = backend.get_cube("county_cases")
-        location_cube = backend.get_cube(coronavirus_location.table_name)
-        country_location_cube = country_location()
-
-        corona_joined.show()
-        county_cases.show()
-    except Exception as e:
-        logger.error("Error fetching database: %s", e)
-
-
-@app.route("/api/map")
-def get_map():
-    logger.info("Get map")
-    tile_provider = get_provider(CARTODBPOSITRON)
-    html = corona_joined.restriction("date", lambda x: x == datetime.date(2020, 4, 18)).destroy("date") \
-        .restriction("country_region", lambda x: x == "Australia").restriction("longitude", lambda x: x != 0) \
-        .visualize("map_html", "confirmed", tile_provider, False)
-    return html
 
 
 @app.route("/")
