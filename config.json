@@ -1,7 +1,7 @@
 {
-    "user": "csci550",
-    "password": "12345678",
-    "host": "localhost",
-    "port": 3306,
-    "database": "cubeTest"
+  "user": "weidong@coro",
+  "password": "P@ssw0rd",
+  "host": "coro.mysql.database.azure.com",
+  "port": 3306,
+  "database": "coronavirus"
 }
