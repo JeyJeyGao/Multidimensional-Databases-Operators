@@ -58,7 +58,7 @@ def run_data_update():
             try:
                 backend = Backend()
                 backend.start_connection()
-                backend.update_coronavirus_data()
+                # backend.update_coronavirus_data()
                 midnight_today = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
                 schedule = midnight_today + datetime.timedelta(days=1, hours=UPDATE_TIME)
                 corona_joined = backend.get_cube("corona_joined")
@@ -105,8 +105,12 @@ def get_state_map(date, country_region):
 def get_county_map(date, country_region, province_state):
     tile_provider = get_provider(CARTODBPOSITRON)
     YY, MM, DD = date.split("-")
-    c = county_cases.restriction("date", lambda x:x==datetime.date(int(YY), int(MM), int(DD))).destroy("date").restriction("longitude", lambda x: x != 0)
-    c = c.restriction("province_state", lambda x:x==province_state)
+    if country_region == "US":
+        c = county_cases.restriction("date", lambda x:x==datetime.date(int(YY), int(MM), int(DD))).destroy("date").restriction("longitude", lambda x: x != 0)
+        c = c.restriction("province_state", lambda x:x==province_state)
+    else:
+        c = corona_joined.restriction("date", lambda x:x==datetime.date(int(YY), int(MM), int(DD))).destroy("date")
+        c = c.restriction("country_region", lambda x: x==country_region).restriction("province_state", lambda x:x==province_state)
     html = c.visualize("map_html", "confirmed", tile_provider, False)
     return html
 
