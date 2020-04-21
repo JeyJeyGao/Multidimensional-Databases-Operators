@@ -4,10 +4,12 @@ import visualization
 import logging
 import logging.handlers
 from Backend import Backend
+import mysql_setup.coronavirus_location as coronavirus_location
 from bokeh.tile_providers import CARTODBPOSITRON, get_provider
 import datetime
 import time
-
+import json
+import copy
 
 UPDATE_TIME = 10  # 10AM UTC
 
@@ -33,6 +35,114 @@ logger.addHandler(handler)
 # cubes
 corona_joined = None
 county_cases = None
+country_location_cube = None
+location_cube = None
+@app.route("/api/map")
+def get_map():
+    logger.info("Get map")
+    tile_provider = get_provider(CARTODBPOSITRON)
+    html = county_cases.restriction("date", lambda x: x == datetime.date(2020, 4, 18)).destroy("date")\
+        .restriction("province_state", lambda x: x == "California").restriction("longitude", lambda x: x != 0) \
+        .visualize("map_html", "confirmed", tile_provider, False)
+    return html
+
+@app.route("/api/map/<date>/countries")
+def get_country_map(date):
+    tile_provider = get_provider(CARTODBPOSITRON)
+    c = country_data(date)
+    c = c.join(country_location_cube).pull("confirmed").pull("death")
+    html = c.visualize("map_html", "confirmed", tile_provider, False)
+    return html
+
+@app.route("/api/map/<date>/<country_region>")
+def get_state_map(date, country_region):
+    tile_provider = get_provider(CARTODBPOSITRON)
+    YY, MM, DD = date.split("-")
+    c = corona_joined.restriction("date", lambda x:x==datetime.date(int(YY), int(MM), int(DD))).destroy("date")
+    c = c.restriction("country_region", lambda x: x==country_region) 
+    html = c.visualize("map_html", "confirmed", tile_provider, False)
+    return html
+
+@app.route("/api/map/<date>/<country_region>/<province_state>")
+def get_county_map(date, country_region, province_state):
+    tile_provider = get_provider(CARTODBPOSITRON)
+    YY, MM, DD = date.split("-")
+    c = county_cases.restriction("date", lambda x:x==datetime.date(int(YY), int(MM), int(DD))).destroy("date").restriction("longitude", lambda x: x != 0)
+    c = c.restriction("province_state", lambda x:x==province_state)
+    html = c.visualize("map_html", "confirmed", tile_provider, False)
+    return html
+
+
+def country_data(date):
+    YY, MM, DD = date.split("-")
+    c = corona_joined.restriction("date", lambda x:x==datetime.date(int(YY), int(MM), int(DD)))
+    c = c.push("confirmed").push("death")
+    c.cube = c.cube.drop(columns=["province_state", "date","latitude", "longitude","confirmed", "death"])
+    # merge
+    dimension_name = {"country_region":"country_region"}
+    f = [
+        lambda x: [x],
+    ]
+    felem = lambda x : x.sum()
+    c = c.merge(felem, dimension_name, f)
+    return c
+
+def country_location():
+    dimension_name = {"country_region":"country_region"}
+    f = [
+        lambda x: [x],
+    ]
+    felem = lambda x : x.mean()
+    location = copy.deepcopy(location_cube)
+    location = location.push("latitude").push("longitude")
+    location.cube = location.cube.drop(columns=["province_state", "latitude", "longitude"])
+    c = location.merge(felem, dimension_name, f)
+    c = c.pull("latitude").pull("longitude")
+    return c
+
+@app.route("/api/<date>/countries")
+def get_country_data(date):
+    c = country_data(date)
+    c = c.push("country_region")
+    data = c.element.values.tolist()
+    res = {}
+    for confirmed, death, country in data:
+        res[country] = {"confirmed":confirmed, "death":death}
+    return json.dumps(res)
+
+@app.route("/api/<date>/<country_region>")
+def get_state_data(date, country_region):
+    YY, MM, DD = date.split("-")
+    c = corona_joined.restriction("date", lambda x:x==datetime.date(int(YY), int(MM), int(DD)))
+    c = c.restriction("country_region", lambda x:x==country_region)
+    c = c.push("confirmed").push("death").push("province_state")
+    data = c.element.values.tolist()
+    res = {}
+    for confirmed, death, state in data:
+        res[state] = {"confirmed":confirmed, "death":death}
+    return json.dumps(res)
+
+@app.route("/api/<date>/<country_region>/<province_state>")
+def get_county_data(date, country_region,province_state):
+    YY, MM, DD = date.split("-")
+    c = county_cases.restriction("date", lambda x:x==datetime.date(int(YY), int(MM), int(DD)))
+    c = c.restriction("province_state", lambda x:x==province_state)
+    c = c.push("confirmed").push("death").push("county")
+    data = c.element.values.tolist()
+    res = {}
+    for confirmed, death, county in data:
+        res[county] = {"confirmed":confirmed, "death":death} 
+    return json.dumps(res)
+
+
+@app.route("/")
+def send_index():
+    return app.send_static_file("index.html")
+
+
+@app.route("/<path:path>")
+def send_file(path):
+    return app.send_static_file(path)
 
 
 def run_data_update():
@@ -65,6 +175,19 @@ def run_data_update():
 t1 = threading.Thread(name="Database", target=run_data_update)
 t1.start()
 app = Flask(__name__, static_folder="web_app/dist")
+if __name__ == "__main__":
+    try:
+        backend = Backend()
+        backend.start_connection()
+        corona_joined = backend.get_cube("corona_joined")
+        county_cases = backend.get_cube("county_cases")
+        location_cube = backend.get_cube(coronavirus_location.table_name)
+        country_location_cube = country_location()
+
+        corona_joined.show()
+        county_cases.show()
+    except Exception as e:
+        logger.error("Error fetching database: %s", e)
 
 
 @app.route("/api/map")
