@@ -58,7 +58,7 @@ def run_data_update():
             try:
                 backend = Backend()
                 backend.start_connection()
-                # backend.update_coronavirus_data()
+                backend.update_coronavirus_data()
                 midnight_today = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
                 schedule = midnight_today + datetime.timedelta(days=1, hours=UPDATE_TIME)
                 corona_joined = backend.get_cube("corona_joined")
