@@ -89,7 +89,7 @@ def get_country_map(date):
     tile_provider = get_provider(CARTODBPOSITRON)
     c = country_data(date)
     c = c.join(country_location_cube).pull("confirmed").pull("death")
-    html = c.visualize("map_html", "confirmed", tile_provider, False)
+    html = c.visualize("map_html", "confirmed", tile_provider, True)
     return html
 
 @app.route("/api/map/<date>/<country_region>")
@@ -150,6 +150,10 @@ def country_location():
     c = location.merge(felem, dimension_name, f)
     c = c.pull("latitude").pull("longitude")
     return c
+
+@app.route("/api/daterange")
+def date_range():
+    return {"min": str(min(corona_joined.cube["date"])), "max": str(max(corona_joined.cube["date"]))}
 
 @app.route("/api/<date>/countries")
 def get_country_data(date):
