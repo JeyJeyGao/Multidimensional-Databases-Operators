@@ -3,3 +3,5 @@ flask
 pandas
 mysql-connector-python
 plotly
+beautifulsoup4
+requests

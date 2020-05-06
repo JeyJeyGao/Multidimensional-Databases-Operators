@@ -37,11 +37,13 @@ corona_joined = None
 county_cases = None
 country_location_cube = None
 location_cube = None
+sex = None
+age = None
 
 
 
 def run_data_update():
-    global corona_joined, county_cases, location_cube, country_location_cube
+    global corona_joined, county_cases, location_cube, country_location_cube, sex, age
     try:
         backend = Backend()
         backend.start_connection()
@@ -49,6 +51,8 @@ def run_data_update():
         county_cases = backend.get_cube("county_cases")
         location_cube = backend.get_cube(coronavirus_location.table_name)
         country_location_cube = country_location()
+        sex = backend.get_cube("sex")
+        age = backend.get_cube("age")
     except Exception as e:
         logger.error("Error fetching database: %s", e)
     schedule = datetime.datetime.now()
@@ -65,6 +69,8 @@ def run_data_update():
                 county_cases = backend.get_cube("county_cases")
                 location_cube = backend.get_cube(coronavirus_location.table_name)
                 country_location_cube = country_location()
+                sex = backend.get_cube("sex")
+                age = backend.get_cube("age")
                 logger.info("Update succeed. Scheduled for %s UTC", schedule)
             except Exception as e:
                 logger.error("Error updating database: %s", e)
@@ -188,6 +194,14 @@ def get_county_data(date, country_region,province_state):
     for confirmed, death, county in data:
         res[county] = {"confirmed":confirmed, "death":death} 
     return json.dumps(res)
+
+@app.route("/api/sex")
+def get_sex():
+    return {"data": [{s: d} for s, d in sex.cube.values]}
+
+@app.route("/api/age")
+def get_age():
+    return {"data": [{s: d} for s, d in age.cube.values]}
 
 
 @app.route("/")

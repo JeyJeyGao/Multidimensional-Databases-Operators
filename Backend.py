@@ -9,6 +9,8 @@ import mysql_setup.coronavirus as coronavirus
 import mysql_setup.coronavirus_location as coronavirus_location
 import mysql_setup.county_cases as county_cases
 import mysql_setup.corona_joined as corona_joined
+import mysql_setup.sex as sex
+import mysql_setup.age as age
 from mysql_setup.jhu_data import fetch_data
 from cube import Cube
 
@@ -125,6 +127,8 @@ class Backend:
         update_table(coronavirus_location.table_name, coronavirus_location.output_name, coronavirus_location)
         update_table(county_cases.table_name, county_cases.output_name, county_cases)
         update_table(corona_joined.table_name, corona_joined.output_name, corona_joined)
+        update_table(sex.table_name, sex.output_name, sex)
+        update_table(age.table_name, age.output_name, age)
         self.cnx.commit()
         print("CoronaVirus data updated.")
 
