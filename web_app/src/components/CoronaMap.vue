@@ -45,11 +45,11 @@
 
 <script>
 import axios from "axios";
-import dateQuickSlider from "vue-date-quick-slider";
+// import dateQuickSlider from "vue-date-quick-slider";
 export default {
-    components: {
-        dateQuickSlider
-    },
+    // components: {
+        // dateQuickSlider
+    // },
     name: "CoronaMap",
     methods: {
         onload() {
