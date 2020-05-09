@@ -265,7 +265,7 @@ def map_html(cube, value, tile_provider, world_view):
     p = figure(x_range=x_range, y_range=y_range,
                x_axis_type="mercator", y_axis_type="mercator")
 
-    p.plot_width = 1100
+    p.plot_width = 790
     p.plot_height = 650
 
     hover = HoverTool(tooltips=[(col, "@" + col) for col in cube_copy.columns if col != "longitude" and
