@@ -97,6 +97,9 @@ export default {
             while (!element.title) {
                 element = element.parentElement;
             }
+            if (element.title === "Unknow"){
+                return;
+            }
             if (element.title !== this.currentState){
                 this.currentState = element.title;
                 this.mapSrc = `/api/map/${this.maxDate}/${this.currentCountry}/${this.currentState}`
