@@ -119,6 +119,7 @@ export default {
             let minDate = new Date(this.minDate);
             // minDate.setDate(minDate.getDate()-1);
             let minDateStr = this.dateToString(minDate);
+            this.dateList = [];
             while (this.dateToString(date) != minDateStr) {
                 this.dateList.push(this.dateToString(date));
                 console.log(this.dateToString(date));
