@@ -2,7 +2,7 @@
     <div class="row justify-content-center">
         <div class="card worldlist text-xl-left" style="max-height: 670px;">
             <ul class="list-group list-group-flush overflow-auto">
-                <div class="row">
+                <div class="row h6">
                     <span class="col">Country</span>
                     <span class="col">confirmed</span>
                     <span class="col">death</span>
@@ -10,12 +10,11 @@
                 <li
                     class="list-group-item"
                     :key="c[0]"
-                    @click="changeCountryMap"
                     :title="c[0]"
                     v-for="c in sortCountries(countryCases, 'confirmed')"
                     :class="c[0] === currentCountry? 'bg-secondary text-light': ''"
                 >
-                    <div class="row">
+                    <div class="row" @click="changeCountryMap">
                         <span class="col">{{c[0]}}</span>
                         <span class="col">{{c[1].confirmed}}</span>
                         <span class="col">{{c[1].death}}</span>
@@ -26,12 +25,13 @@
                                 class="list-group-item"
                                 :key="s[0]"
                                 :title="s[0]"
-                                v-for="s in sortStates(stateCases, 'confirmed')"
+                                v-for="s in sortData(stateCases, 'confirmed')"
+                                :class="s[0] === currentState? 'bg-secondary text-light': ''"
                             >
-                                <div class="row">
-                                    <span class="col">{{s[0]}}</span>
-                                    <span class="col">{{s[1].confirmed}}</span>
-                                    <span class="col">{{s[1].death}}</span>
+                                <div class="row" @click="changeStateMap">
+                                    <div class="col">{{s[0]}}</div>
+                                    <div class="col">{{s[1].confirmed}}</div>
+                                    <div class="col">{{s[1].death}}</div>
                                 </div>
                             </li>
                         </ul>
@@ -79,21 +79,32 @@ export default {
                 (a, b) => b[1][compareValue] - a[1][compareValue]
             );
         },
-
-        sortStates(statesJson, compareValue) {
-            let statesArray = [];
-            for (let c in statesJson) {
-                if (c === "null"){
-                    statesArray.push(["Unknow Area", statesJson[c]]);
-                }else{
-                    statesArray.push([c, statesJson[c]]);
+        sortData(dataJson, compareValue) {
+            let dataArray = [];
+            for (let c in dataJson) {
+                if (c === "null") {
+                    dataArray.push(["Unknow", dataJson[c]]);
+                } else {
+                    dataArray.push([c, dataJson[c]]);
                 }
             }
-            return statesArray.sort(
+            return dataArray.sort(
                 (a, b) => b[1][compareValue] - a[1][compareValue]
             );
         },
-
+        changeStateMap(event){
+            let element = event.target;
+            while (!element.title) {
+                element = element.parentElement;
+            }
+            if (element.title !== this.currentState){
+                this.currentState = element.title;
+                this.mapSrc = `/api/map/${this.maxDate}/${this.currentCountry}/${this.currentState}`
+            }else{
+                this.currentState = ""
+                this.mapSrc = `/api/map/${this.maxDate}/${this.currentCountry}`;
+            }
+        },
         changeCountryMap(event) {
             let element = event.target;
             while (!element.title) {
@@ -105,11 +116,11 @@ export default {
                 this.getStates(this.currentCountry);
             } else {
                 this.currentCountry = "";
-                this.mapSrc = this.mapSrc = `/api/map/${this.maxDate}/countries`;
+                this.mapSrc = `/api/map/${this.maxDate}/countries`;
             }
         },
         getStates(country) {
-            this.stateCases = {}
+            this.stateCases = {};
             axios
                 .get(`/api/${this.maxDate}/${country}`)
                 .then(response => {
@@ -126,7 +137,8 @@ export default {
             minDate: "",
             countryCases: {},
             stateCases: {},
-            currentCountry: ""
+            currentCountry: "",
+            currentState: "",
         };
     },
     mounted() {
