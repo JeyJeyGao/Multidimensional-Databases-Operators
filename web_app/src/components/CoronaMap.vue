@@ -1,12 +1,12 @@
 <template>
     <div class="row justify-content-center">
-        <div class="card worldlist text-xl-left pl-1" style="max-height: 670px;">
+        <div class="card worldlist text-xl-left pl-2" style="max-height: 670px;">
+            <div class="row h6">
+                <span class="col">Country</span>
+                <span class="col">confirmed</span>
+                <span class="col">death</span>
+            </div>
             <ul class="list-group list-group-flush overflow-auto">
-                <div class="row h6">
-                    <span class="col">Country</span>
-                    <span class="col">confirmed</span>
-                    <span class="col">death</span>
-                </div>
                 <li
                     class="list-group-item"
                     :key="c[0]"
@@ -40,21 +40,37 @@
             </ul>
         </div>
         <iframe class="map justify-content-center rounded border-left-0 border-light" :src="mapSrc"></iframe>
-        <div class="row dem">
-            <demographics class="col" title="Age of Coronavirus Deaths (%)" :data="age"></demographics>
-            <div class="w-100"></div>
-            <demographics class="col" title="Sex Ratio (%)" :data="sex"></demographics>
+        <div class="card worldlist text-xl-left pl-2" style="max-height: 670px;">
+            <div class="row dem" style="height:230px;">
+                <demographics class="col h-40" title="Age of Coronavirus Deaths (%)" :data="age"></demographics>
+            </div>
+            <div class="row dem" style="height:220px;">
+                <demographics class="col" title="Sex Ratio (%)" :data="sex"></demographics>
+            </div>
+            <ul class="list-group list-group-flush overflow-auto" style="max-height:220px;">
+                <li
+                    class="list-group-item"
+                    :key="date"
+                    :title="date"
+                    v-for="date in dateList"
+                    :class="date === currentDate? 'bg-secondary text-light': ''"
+                >
+                    <div class="row">
+                        <span class="col" @click="changeDate">{{date}}</span>
+                    </div>
+                </li>
+            </ul>
         </div>
     </div>
 </template>
 
 <script>
 import axios from "axios";
-import demographics from './demographics.vue'
+import demographics from "./demographics.vue";
 // import dateQuickSlider from "vue-date-quick-slider";
 export default {
     // components: {
-        // dateQuickSlider
+    //     dateQuickSlider
     // },
     name: "CoronaMap",
     methods: {
@@ -64,22 +80,51 @@ export default {
                 .get("/api/daterange")
                 .then(response => {
                     let data = response.data;
+                    if (this.currentDate === "") {
+                        this.currentDate = data.max;
+                    }
                     this.maxDate = data.max;
                     this.minDate = data.min;
-                    this.mapSrc = `api/map/${this.maxDate}/countries`;
-
+                    this.mapSrc = `api/map/${this.currentDate}/countries`;
                     // get world list
                     axios
-                        .get(`/api/${this.maxDate}/countries`)
+                        .get(`/api/${this.currentDate}/countries`)
                         .then(response => {
                             this.countryCases = response.data;
                         })
                         .catch(error => console.log(error));
+                    this.getDateList();
                 })
                 .catch(error => console.log(error));
             this.getSexAge();
         },
-
+        dateToString(date) {
+            const dtf = new Intl.DateTimeFormat("en-US", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit"
+            });
+            const [
+                { value: mo },
+                ,
+                { value: da },
+                ,
+                { value: ye }
+            ] = dtf.formatToParts(date);
+            return `${ye}-${mo}-${da}`;
+        },
+        getDateList() {
+            let date = new Date(this.maxDate);
+            date.setDate(date.getDate() + 1);
+            let minDate = new Date(this.minDate);
+            // minDate.setDate(minDate.getDate()-1);
+            let minDateStr = this.dateToString(minDate);
+            while (this.dateToString(date) != minDateStr) {
+                this.dateList.push(this.dateToString(date));
+                console.log(this.dateToString(date));
+                date.setDate(date.getDate() - 1);
+            }
+        },
         sortCountries(countriesJson, compareValue) {
             let countriesArray = [];
             for (let c in countriesJson) {
@@ -112,10 +157,20 @@ export default {
             }
             if (element.title !== this.currentState) {
                 this.currentState = element.title;
-                this.mapSrc = `/api/map/${this.maxDate}/${this.currentCountry}/${this.currentState}`;
+                this.mapSrc = `/api/map/${this.currentDate}/${this.currentCountry}/${this.currentState}`;
             } else {
                 this.currentState = "";
-                this.mapSrc = `/api/map/${this.maxDate}/${this.currentCountry}`;
+                this.mapSrc = `/api/map/${this.currentDate}/${this.currentCountry}`;
+            }
+        },
+        changeDate(event) {
+            let element = event.target;
+            while (!element.title) {
+                element = element.parentElement;
+            }
+            if (element.title !== this.currentDate) {
+                this.currentDate = element.title;
+                this.onload();
             }
         },
         changeCountryMap(event) {
@@ -125,17 +180,17 @@ export default {
             }
             if (element.title !== this.currentCountry) {
                 this.currentCountry = element.title;
-                this.mapSrc = `/api/map/${this.maxDate}/${this.currentCountry}`;
+                this.mapSrc = `/api/map/${this.currentDate}/${this.currentCountry}`;
                 this.getStates(this.currentCountry);
             } else {
                 this.currentCountry = "";
-                this.mapSrc = `/api/map/${this.maxDate}/countries`;
+                this.mapSrc = `/api/map/${this.currentDate}/countries`;
             }
         },
         getStates(country) {
             this.stateCases = {};
             axios
-                .get(`/api/${this.maxDate}/${country}`)
+                .get(`/api/${this.currentDate}/${country}`)
                 .then(response => {
                     this.stateCases = response.data;
                 })
@@ -178,7 +233,9 @@ export default {
             currentCountry: "",
             currentState: "",
             age: [],
-            sex: []
+            sex: [],
+            currentDate: "",
+            dateList: []
         };
     },
     mounted() {
@@ -192,7 +249,7 @@ export default {
 
 <style scoped>
 .map {
-    width: 1115px;
+    width: 800px;
     height: 670px;
 }
 
