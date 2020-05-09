@@ -1,6 +1,6 @@
 <template>
     <div class="row justify-content-center">
-        <div class="card worldlist text-xl-left" style="max-height: 670px;">
+        <div class="card worldlist text-xl-left pl-1" style="max-height: 670px;">
             <ul class="list-group list-group-flush overflow-auto">
                 <div class="row h6">
                     <span class="col">Country</span>
@@ -45,7 +45,11 @@
 
 <script>
 import axios from "axios";
+import dateQuickSlider from "vue-date-quick-slider";
 export default {
+    components: {
+        dateQuickSlider
+    },
     name: "CoronaMap",
     methods: {
         onload() {
@@ -92,19 +96,19 @@ export default {
                 (a, b) => b[1][compareValue] - a[1][compareValue]
             );
         },
-        changeStateMap(event){
+        changeStateMap(event) {
             let element = event.target;
             while (!element.title) {
                 element = element.parentElement;
             }
-            if (element.title === "Unknow"){
+            if (element.title === "Unknow") {
                 return;
             }
-            if (element.title !== this.currentState){
+            if (element.title !== this.currentState) {
                 this.currentState = element.title;
-                this.mapSrc = `/api/map/${this.maxDate}/${this.currentCountry}/${this.currentState}`
-            }else{
-                this.currentState = ""
+                this.mapSrc = `/api/map/${this.maxDate}/${this.currentCountry}/${this.currentState}`;
+            } else {
+                this.currentState = "";
                 this.mapSrc = `/api/map/${this.maxDate}/${this.currentCountry}`;
             }
         },
@@ -141,7 +145,7 @@ export default {
             countryCases: {},
             stateCases: {},
             currentCountry: "",
-            currentState: "",
+            currentState: ""
         };
     },
     mounted() {
