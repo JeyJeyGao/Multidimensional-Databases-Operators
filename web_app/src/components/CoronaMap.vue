@@ -40,11 +40,17 @@
             </ul>
         </div>
         <iframe class="map justify-content-center rounded border-left-0 border-light" :src="mapSrc"></iframe>
+        <div class="row dem">
+            <demographics class="col" title="Age of Coronavirus Deaths (%)" :data="age"></demographics>
+            <div class="w-100"></div>
+            <demographics class="col" title="Sex Ratio (%)" :data="sex"></demographics>
+        </div>
     </div>
 </template>
 
 <script>
 import axios from "axios";
+import demographics from './demographics.vue'
 // import dateQuickSlider from "vue-date-quick-slider";
 export default {
     // components: {
@@ -66,12 +72,12 @@ export default {
                     axios
                         .get(`/api/${this.maxDate}/countries`)
                         .then(response => {
-                            console.log(response.data);
                             this.countryCases = response.data;
                         })
                         .catch(error => console.log(error));
                 })
                 .catch(error => console.log(error));
+            this.getSexAge();
         },
 
         sortCountries(countriesJson, compareValue) {
@@ -131,8 +137,33 @@ export default {
             axios
                 .get(`/api/${this.maxDate}/${country}`)
                 .then(response => {
-                    console.log(response.data);
                     this.stateCases = response.data;
+                })
+                .catch(error => console.log(error));
+        },
+        getSexAge() {
+            axios
+                .get("/api/age")
+                .then(response => {
+                    this.age = [];
+                    let data = response.data.data;
+                    for (let i in data) {
+                        for (let k in data[i]) {
+                            this.age.unshift([k, data[i][k]]);
+                        }
+                    }
+                })
+                .catch(error => console.log(error));
+            axios
+                .get("/api/sex")
+                .then(response => {
+                    this.sex = [];
+                    let data = response.data.data;
+                    for (let i in data) {
+                        for (let k in data[i]) {
+                            this.sex.push([k, data[i][k]]);
+                        }
+                    }
                 })
                 .catch(error => console.log(error));
         }
@@ -145,11 +176,16 @@ export default {
             countryCases: {},
             stateCases: {},
             currentCountry: "",
-            currentState: ""
+            currentState: "",
+            age: [],
+            sex: []
         };
     },
     mounted() {
         this.onload();
+    },
+    components: {
+        demographics
     }
 };
 </script>
@@ -166,5 +202,9 @@ export default {
 
 li {
     cursor: pointer;
+}
+
+.dem {
+    width: 300px;
 }
 </style>
